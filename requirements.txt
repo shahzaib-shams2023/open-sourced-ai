@@ -1,0 +1,49 @@
+crewai
+crewai-tools
+langchain
+langchain-community
+langchain-ollama
+chromadb
+ollama
+rich
+typer
+pyyaml
+sentence-transformers
+
+# Browser Automation
+playwright
+browser-use
+
+# GUI Automation
+pyautogui
+
+# Vision
+pillow
+opencv-python
+transformers
+
+# Voice
+faster-whisper
+sounddevice
+TTS
+
+# RAG
+llama-index
+faiss-cpu
+pypdf
+
+# MCP
+mcp
+
+# VSCode
+websockets
+
+# Docker
+docker
+
+# Autonomous Coding
+aider-chat
+
+# Multi-agent swarms
+autogen-agentchat
+langgraph
