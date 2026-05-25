@@ -1,0 +1,14 @@
+planner:
+  model: deepseek-r1:32b
+
+coder:
+  model: qwen3:32b
+
+reviewer:
+  model: deepseek-r1:32b
+
+researcher:
+  model: mistral:latest
+
+shell:
+  model: gemma3:12b
