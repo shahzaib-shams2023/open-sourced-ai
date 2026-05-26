@@ -1,16 +1,25 @@
-"""
-USTAAD File Tools — Safety-Gated File Operations
-
-File writes to critical files require confirmation.
-File deletions always require confirmation.
-Includes new tools: list_directory, search_files, delete_file.
-"""
-
 import os
+import re
 from pathlib import Path
 from crewai.tools import tool
 
 from ustaad.core.safety import get_safety_gate
+
+
+def _sanitize_html_content(content: str, path: str) -> str:
+    """Fix common LLM output corruptions in HTML/CSS/JS files.
+    
+    The gemma3 model via CrewAI's JSON tool pipeline sometimes injects
+    trailing spaces inside quoted attribute values (e.g., id="board " → id="board").
+    """
+    ext = Path(path).suffix.lower()
+    if ext not in ('.html', '.htm', '.css', '.js', '.jsx', '.ts', '.tsx', '.svg'):
+        return content
+
+    # Fix trailing whitespace inside HTML attribute values: attr="value " → attr="value"
+    content = re.sub(r'(=\s*"[^"]*?)\s+"', r'\1"', content)
+    content = re.sub(r"(=\s*'[^']*?)\s+'", r"\1'", content)
+    return content
 
 
 def read_file(path: str) -> str:
@@ -30,6 +39,9 @@ def write_file(path: str, content: str) -> str:
             gate = get_safety_gate()
             if not gate.confirm_file_write(str(p), is_overwrite=True):
                 return f"[BLOCKED] User rejected overwrite of: {path}"
+
+        # Sanitize LLM output corruptions
+        content = _sanitize_html_content(content, path)
 
         p.parent.mkdir(parents=True, exist_ok=True)
         p.write_text(content, encoding="utf-8")

@@ -210,7 +210,8 @@ def route_task(prompt: str, file_count: int = 0, is_empty_workspace: bool = Fals
         agents = ["planner", "coder", "reviewer"]
 
         if task_type == TaskType.DEBUG:
-            agents = ["planner", "debugger", "coder", "reviewer"]
+            # Debugger traces root cause + Coder applies fix — skip planner/reviewer
+            agents = ["debugger", "coder"]
         elif task_type == TaskType.RESEARCH:
             agents = ["researcher", "planner", "coder", "reviewer"]
 

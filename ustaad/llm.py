@@ -51,6 +51,8 @@ def load_model(model_name: str) -> LLM:
         model=model_name_full,
         temperature=0.2,
         base_url=os.environ.get("OLLAMA_BASE_URL", "http://localhost:11434"),
+        timeout=120,           # 120s per request (prevents 600s default hangs)
+        max_retries=2,         # retry on timeout/connection errors
     )
     _llm_cache[model_name] = llm
     return llm

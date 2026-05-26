@@ -10,10 +10,10 @@ Supports: pytest, npm test, cargo test, go test, ruff, eslint, mypy, etc.
 
 import os
 import re
+import subprocess
 from dataclasses import dataclass, field
 from typing import Optional
 
-from ustaad.tools.shell_tools import run_command
 from ustaad.core.scanner import WorkspaceScanner, ScanResult
 
 
@@ -91,8 +91,25 @@ class TestEngine:
             self.scan = scanner.scan()
 
     def _run(self, cmd: str) -> dict:
-        full_cmd = f"cd \"{self.workspace}\" && {cmd}"
-        return run_command(full_cmd)
+        """Run a command in the workspace directory."""
+        try:
+            result = subprocess.run(
+                cmd,
+                shell=True,
+                text=True,
+                capture_output=True,
+                timeout=120,
+                cwd=self.workspace,
+            )
+            return {
+                "stdout": result.stdout,
+                "stderr": result.stderr,
+                "returncode": result.returncode,
+            }
+        except subprocess.TimeoutExpired:
+            return {"stdout": "", "stderr": f"Command timed out after 120s: {cmd}", "returncode": -1}
+        except Exception as e:
+            return {"stdout": "", "stderr": str(e), "returncode": -1}
 
     # -------------------------------------------------------------------
     # Test execution
