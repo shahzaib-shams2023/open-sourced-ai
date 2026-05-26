@@ -43,20 +43,43 @@ def run_task(user_prompt, workspace=None):
     print("\nGit Status:")
     print(git_status["stdout"])
 
+    # Generate workspace file listing to provide initial context to the planner agent
+    workspace_context = ""
+    if workspace and os.path.exists(workspace):
+        try:
+            files_list = []
+            for root, dirs, files in os.walk(workspace):
+                # Prune unwanted directories in place
+                dirs[:] = [d for d in dirs if d not in ['.git', 'venv', 'node_modules', '__pycache__', 'memory', 'artifacts']]
+                for file in files:
+                    full_path = os.path.join(root, file)
+                    rel_path = os.path.relpath(full_path, workspace)
+                    files_list.append(rel_path)
+            
+            if files_list:
+                workspace_context = "Existing files in workspace:\n- " + "\n- ".join(files_list[:100])
+                if len(files_list) > 100:
+                    workspace_context += "\n- ... (and more files exist)"
+            else:
+                workspace_context = "Workspace is currently empty."
+        except Exception as e:
+            workspace_context = f"Error listing workspace files: {str(e)}"
+
     # Planning Task
     planning_task = Task(
-
         description=f"""
-        Create a detailed implementation plan for:
+        Analyze the workspace and create a detailed implementation plan for:
 
         {user_prompt}
 
-        Current workspace:
+        Current workspace path:
         {workspace}
+
+        {workspace_context}
         """,
 
         expected_output="""
-        Step-by-step technical plan
+        A clear, step-by-step technical plan detailing what files to create or modify to accomplish the goal.
         """,
 
         agent=planner
@@ -64,44 +87,43 @@ def run_task(user_prompt, workspace=None):
 
     # Coding Task
     coding_task = Task(
-
         description=f"""
-        Implement the following:
+        Implement the changes required to fulfill the following goal:
 
         {user_prompt}
 
-        Generate production-ready code.
+        Follow the design guidelines and technical plan provided by the Project Planner. Read the necessary files, then write complete, clean, and production-ready code.
         """,
 
         expected_output="""
-        Production-ready implementation
+        Production-ready implementation with all requested changes applied.
         """,
 
-        agent=coder
+        agent=coder,
+        context=[planning_task]
     )
 
     # Review Task
     review_task = Task(
-
         description="""
-        Review generated implementation for:
+        Review the changes made by the Software Engineer to ensure they are fully operational and production-grade.
 
+        Check for:
         - bugs
-        - scalability
-        - security
-        - performance
+        - security vulnerabilities
+        - scalability and performance
         """,
 
         expected_output="""
-        Detailed technical review
+        Detailed technical review and confirmation of correctness.
         """,
 
-        agent=reviewer
+        agent=reviewer,
+        context=[coding_task]
     )
 
     # Create Crew
     crew = Crew(
-
         agents=[
             planner,
             coder,
