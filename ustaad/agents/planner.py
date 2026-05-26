@@ -17,6 +17,6 @@ planner = Agent(
     allow_delegation=True,
 
     llm=load_model(
-        "deepseek-r1:32b"
+        "gemma3:12b"
     )
 )

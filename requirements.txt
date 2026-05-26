@@ -1,5 +1,6 @@
 crewai
 crewai-tools
+litellm
 langchain
 langchain-community
 langchain-ollama

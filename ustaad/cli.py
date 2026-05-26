@@ -1,4 +1,6 @@
 import os
+from dotenv import load_dotenv
+load_dotenv()
 os.environ.setdefault("OPENAI_API_KEY", "na")
 import typer
 

@@ -15,6 +15,6 @@ coder = Agent(
     verbose=True,
 
     llm=load_model(
-        "qwen3:32b"
+        "gemma3:12b"
     )
 )
