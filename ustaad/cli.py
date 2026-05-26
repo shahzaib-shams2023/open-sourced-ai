@@ -1,5 +1,5 @@
 """
-USTAAD CLI — Terminal-Native Engineering Interface
+USTAAD CLI — Premium Terminal-Native Engineering Interface
 
 Commands:
   ustaad                          Interactive REPL
@@ -11,6 +11,7 @@ Commands:
   ustaad git                      Git status
   ustaad mode                     Show execution mode
   ustaad memory "query"           Search project memory
+  ustaad routing                  Show model routing
 
 Flags:
   --safe / -s                     Confirm all writes
@@ -30,10 +31,16 @@ import typer
 from rich.console import Console
 from rich.markdown import Markdown
 from rich.panel import Panel
+from rich.text import Text
+from rich.rule import Rule
+from rich.table import Table
 
 from ustaad.main import run_task
 from ustaad.core.execution_mode import get_mode, set_mode
 from ustaad.core.scanner import WorkspaceScanner
+from ustaad.core.progress import (
+    BANNER_PREMIUM, phase_spinner, phase_header, error_panel,
+)
 
 if sys.platform.startswith("win"):
     try:
@@ -43,18 +50,6 @@ if sys.platform.startswith("win"):
         pass
 
 console = Console()
-
-BANNER = """[bold green]
-██╗   ██╗███████╗████████╗ █████╗  █████╗ ██████╗
-██║   ██║██╔════╝╚══██╔══╝██╔══██╗██╔══██╗██╔══██╗
-██║   ██║███████╗   ██║   ███████║███████║██║  ██║
-██║   ██║╚════██║   ██║   ██╔══██║██╔══██║██║  ██║
-╚██████╔╝███████║   ██║   ██║  ██║██║  ██║██████╔╝
- ╚═════╝ ╚══════╝   ╚═╝   ╚═╝  ╚═╝╚═╝  ╚═╝╚═════╝
-[/bold green]
-[italic cyan]  Autonomous Terminal-Native Engineering Agent[/italic cyan]
-[dim]  SCAN > INDEX > PLAN > EXECUTE > TEST > REPAIR > REFLECT > COMPLETE[/dim]
-"""
 
 
 def is_ollama_running() -> bool:
@@ -71,29 +66,55 @@ def is_ollama_running() -> bool:
 def print_mode():
     mode = get_mode()
     if mode.autonomous:
-        label = "[bold red]AUTONOMOUS[/bold red] -- all ops auto-execute"
+        label = "[bold red]⚠ AUTONOMOUS[/bold red] — all ops auto-execute"
     elif mode.safe:
-        label = "[bold green]SAFE[/bold green] -- reads auto, writes confirm"
+        label = "[bold green]🔒 SAFE[/bold green] — reads auto, writes confirm"
     else:
-        label = "[bold yellow]SEMI-AUTONOMOUS[/bold yellow] -- safe auto, dangerous confirm"
+        label = "[bold yellow]⚙ SEMI-AUTO[/bold yellow] — safe auto, dangerous confirm"
     confirm = "[green]ON[/green]" if mode.confirm_destructive else "[red]OFF[/red]"
     console.print(Panel(
         f"  Mode: {label}\n  Confirm Destructive: {confirm}",
         title="[bold cyan]Execution Mode[/bold cyan]",
         border_style="cyan",
+        padding=(0, 2),
     ))
 
 
-app = typer.Typer(help="USTAAD -- Autonomous Terminal-Native Engineering Agent", no_args_is_help=False)
+def print_welcome_commands():
+    """Print available commands in a nice table."""
+    table = Table(show_header=False, box=None, padding=(0, 2))
+    table.add_column("Command", style="bold cyan", width=24)
+    table.add_column("Description", style="dim")
+
+    table.add_row("scan", "Scan workspace for languages, frameworks, tools")
+    table.add_row("index", "Build deep repository index")
+    table.add_row("search <query>", "Semantic code search")
+    table.add_row("test", "Auto-detect and run tests + linters")
+    table.add_row("git", "Show comprehensive git status")
+    table.add_row("mode", "Show current execution mode")
+    table.add_row("memory [query]", "Search or view project memory")
+    table.add_row("routing", "Show model routing configuration")
+    table.add_row("exit", "Exit REPL")
+
+    console.print(Panel(
+        table,
+        title="[bold cyan]Commands[/bold cyan]",
+        border_style="dim",
+        padding=(0, 1),
+    ))
+
+
+app = typer.Typer(help="USTAAD — Autonomous Terminal-Native Engineering Agent", no_args_is_help=False)
 
 
 @app.command("scan")
 def cmd_scan():
     """Scan workspace: detect languages, frameworks, CI/CD, linters, tests."""
     w = os.getcwd()
-    console.print(f"\n[bold cyan][SCAN][/bold cyan] {w}\n")
-    s = WorkspaceScanner(w)
-    console.print(s.scan().to_context_string())
+    with phase_spinner("SCAN", w):
+        s = WorkspaceScanner(w)
+        result = s.scan()
+    console.print(result.to_context_string())
 
 
 @app.command("index")
@@ -101,8 +122,8 @@ def cmd_index():
     """Build deep repository index: modules, classes, functions, imports."""
     from ustaad.engine.repo_index import RepoIndexer
     w = os.getcwd()
-    console.print(f"\n[bold cyan][INDEX][/bold cyan] {w}\n")
-    idx = RepoIndexer(w).build_index()
+    with phase_spinner("INDEX", w):
+        idx = RepoIndexer(w).load_or_rebuild()
     console.print(idx.to_context_string())
 
 
@@ -110,27 +131,30 @@ def cmd_index():
 def cmd_search(query: str):
     """Semantic code search across the repository."""
     from ustaad.engine.search import SearchEngine
-    console.print(f"\n[bold blue][SEARCH][/bold blue] {query}\n")
-    e = SearchEngine(os.getcwd())
-    e.index_workspace()
-    console.print(e.search_formatted(query))
+    with phase_spinner("SEARCH", query):
+        e = SearchEngine(os.getcwd())
+        e.index_workspace()
+        results = e.search_formatted(query)
+    console.print(results)
 
 
 @app.command("test")
 def cmd_test():
     """Auto-detect and run tests + linters."""
     from ustaad.engine.testing import TestEngine
-    console.print("\n[bold yellow][TEST][/bold yellow]\n")
-    e = TestEngine(os.getcwd())
-    console.print(e.run_all())
+    with phase_spinner("TEST", "Running..."):
+        e = TestEngine(os.getcwd())
+        output = e.run_all()
+    console.print(output)
 
 
 @app.command("git")
 def cmd_git():
     """Show comprehensive git status."""
     from ustaad.engine.git import GitEngine
-    console.print("\n[bold magenta][GIT][/bold magenta]\n")
-    console.print(GitEngine(os.getcwd()).status().to_context_string())
+    with phase_spinner("GIT", "Checking..."):
+        status = GitEngine(os.getcwd()).status()
+    console.print(status.to_context_string())
 
 
 @app.command("mode")
@@ -144,21 +168,21 @@ def cmd_memory(query: str = ""):
     """Search or view project memory."""
     from ustaad.memory import ProjectMemory
     m = ProjectMemory(os.getcwd())
-    console.print(f"\n[dim][MEMORY][/dim]\n")
+    phase_header("MEMORY")
     if query:
         results = m.search(query)
         if results:
             for r in results:
                 console.print(f"  [{r['metadata'].get('category', '?')}] {r['content'][:200]}")
         else:
-            console.print("  No memories found.")
+            console.print("[dim]   No memories found.[/dim]")
     else:
         recent = m.get_recent(10)
         if recent:
             for r in recent:
                 console.print(f"  [{r.get('category', '?')}] {r.get('content', '')[:200]}")
         else:
-            console.print("  Memory is empty.")
+            console.print("[dim]   Memory is empty.[/dim]")
 
 
 @app.command("routing")
@@ -169,22 +193,32 @@ def cmd_routing():
 
 
 def run_interactive():
-    console.print(BANNER)
+    console.print(BANNER_PREMIUM)
     print_mode()
+
     if not is_ollama_running():
-        console.print("[bold red]Ollama is not running on localhost:11434[/bold red]")
-        console.print("[yellow]Start Ollama and try again.[/yellow]\n")
+        error_panel(
+            "Ollama Not Running",
+            "Cannot connect to Ollama on localhost:11434",
+            "Start Ollama with: ollama serve",
+        )
         return
-    console.print("\n[dim]Commands: scan, index, search <q>, test, git, mode, memory, exit[/dim]\n")
+
+    print_welcome_commands()
+    console.print()
+
     while True:
         try:
-            inp = input("ustaad> ").strip()
+            console.print("[bold cyan]ustaad[/bold cyan] [dim]>[/dim] ", end="")
+            inp = input("").strip()
         except (KeyboardInterrupt, EOFError):
-            console.print("\n[dim]Goodbye.[/dim]")
+            console.print("\n[dim]Goodbye. 👋[/dim]")
             break
+
         if not inp:
             continue
         if inp.lower() in ("exit", "quit", "q"):
+            console.print("[dim]Goodbye. 👋[/dim]")
             break
         if inp.lower() == "scan":
             cmd_scan()
@@ -211,10 +245,19 @@ def run_interactive():
         if inp.lower() == "routing":
             cmd_routing()
             continue
-        console.print("\n[bold green]USTAAD Engaged[/bold green]\n")
+        if inp.lower() in ("help", "?", "commands"):
+            print_welcome_commands()
+            continue
+
+        # Run as task prompt
+        console.print()
+        console.print(Rule("[bold green]⚡ USTAAD Engaged[/bold green]", style="green"))
+        console.print()
         result = run_task(inp, workspace=os.getcwd())
-        console.print("\n[bold green]Result:[/bold green]\n")
+        console.print()
+        console.print(Rule("[bold green]Result[/bold green]", style="green"))
         console.print(Markdown(str(result)))
+        console.print()
 
 
 @app.callback(invoke_without_command=True)
@@ -226,7 +269,7 @@ def main(
     debug_mode: bool = typer.Option(False, "--debug", "-d", help="Force debug classification"),
     no_confirm: bool = typer.Option(False, "--no-confirm", help="Skip destructive confirmations"),
 ):
-    """USTAAD -- Autonomous Terminal-Native Engineering Agent"""
+    """USTAAD — Autonomous Terminal-Native Engineering Agent"""
     if autonomous:
         set_mode(safe=False, autonomous=True, confirm_destructive=False)
     elif safe:
@@ -239,16 +282,23 @@ def main(
         run_interactive()
         return
     if not is_ollama_running():
-        console.print("[bold red]Ollama not running on localhost:11434[/bold red]")
+        error_panel(
+            "Ollama Not Running",
+            "Cannot connect to Ollama on localhost:11434",
+            "Start Ollama with: ollama serve",
+        )
         raise typer.Exit(code=1)
     user_prompt = " ".join(prompt)
     if debug_mode:
         user_prompt = f"[debug] {user_prompt}"
-    console.print(BANNER)
+    console.print(BANNER_PREMIUM)
     print_mode()
-    console.print("\n[bold green]USTAAD Engaged[/bold green]\n")
+    console.print()
+    console.print(Rule("[bold green]⚡ USTAAD Engaged[/bold green]", style="green"))
+    console.print()
     result = run_task(user_prompt, workspace=os.getcwd())
-    console.print("\n[bold green]Result:[/bold green]\n")
+    console.print()
+    console.print(Rule("[bold green]Result[/bold green]", style="green"))
     console.print(Markdown(str(result)))
 
 

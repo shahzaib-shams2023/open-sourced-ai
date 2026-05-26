@@ -27,5 +27,4 @@ def index_codebase_tool(dummy: str = "") -> str:
     from ustaad.engine.search import SearchEngine
     engine = SearchEngine(os.getcwd())
     count = engine.index_workspace()
-    stats = engine.get_index_stats()
-    return f"[INDEX] Indexed {count} new chunks. Total: {stats['total_chunks']} chunks."
+    return f"[INDEX] Indexed {count} code chunks for semantic search."

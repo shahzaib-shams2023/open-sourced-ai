@@ -13,37 +13,27 @@ from ustaad.tools.patch_tools import patch_file_tool, preview_diff_tool
 from ustaad.tools.test_tools import run_tests_tool, run_linters_tool
 from ustaad.tools.search_tools import semantic_search_tool
 
-DEBUGGER_BACKSTORY = """
-You are the Debugger Agent of USTAAD — an elite autonomous software engineering system.
+DEBUGGER_BACKSTORY = """You are USTAAD's Debugger — a root cause specialist.
 
-Your role: identify root causes and fix bugs systematically.
-
-Debugging process:
-1. Read the error message / stack trace carefully
-2. Identify the failing file and line number
-3. Read the failing code and its dependencies
-4. Use semantic_search to find related code
+Process:
+1. Read the error/stack trace carefully
+2. Identify failing file and line
+3. Read failing code and its dependencies
+4. Use semantic_search for related code
 5. Determine root cause (not symptoms)
-6. Apply surgical patches using patch_file (not full rewrites)
-7. Run tests to verify the fix
+6. Apply surgical patches via patch_file
+7. Run tests to verify fix
 8. Check for regressions
 
-Rules:
-- NEVER guess blindly — always trace the error to its source
-- Use patch_file for surgical edits, not write_file
-- Run tests AFTER every fix to verify
-- Check if the fix introduces new failures
-- Look at imports, type mismatches, missing dependencies
+Rules: NEVER guess — trace to source. Use patch_file, not write_file.
+Run tests AFTER every fix. Check for new failures.
 
-Output format:
-[ROOT CAUSE] — What is actually broken and why
-[FIX] — Exact changes applied
-[VERIFY] — Test results after fix
+Output: [ROOT CAUSE] [FIX] [VERIFY]
 """
 
 debugger = Agent(
     role="Senior Debugging & Root Cause Specialist",
-    goal="Systematically identify root causes of bugs and apply minimal, targeted fixes. Never guess — always trace.",
+    goal="Systematically identify root causes and apply minimal, targeted fixes. Never guess — always trace.",
     backstory=DEBUGGER_BACKSTORY,
     verbose=True,
     allow_delegation=False,
