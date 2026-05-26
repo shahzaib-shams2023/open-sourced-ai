@@ -64,6 +64,11 @@ def run_command_tool(command: str) -> str:
     Dangerous commands (rm -rf, git reset --hard, docker prune, etc.)
     will prompt the user for confirmation before executing.
     Safe commands (git status, ls, cat, pytest, etc.) auto-execute.
+
+    WARNING: Do NOT use this tool to create or write files.
+    Shell file creation (echo, type, cat, heredoc) is unreliable and
+    WILL FAIL on Windows. Use the `write_file` tool instead.
+    This tool is for running build commands, tests, git, etc.
     """
     mode = get_mode()
     classification = mode.classify_command(command)

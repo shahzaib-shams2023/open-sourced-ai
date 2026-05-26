@@ -8,7 +8,9 @@ Every phase is deliberate. Nothing is blind.
 """
 
 import os
+import sys
 import time
+import platform
 from dotenv import load_dotenv
 load_dotenv()
 os.environ.setdefault("OPENAI_API_KEY", "na")
@@ -142,6 +144,7 @@ def run_task(user_prompt: str, workspace: str = None) -> str:
     ctx.add("MEMORY", mem_ctx, priority=20)
     ctx.add("WORKSPACE PATH", workspace, priority=25)
     ctx.add("EXECUTION MODE", f"{mode_label} | Dangerous ops require confirmation.", priority=30)
+    ctx.add("PLATFORM", f"OS: {platform.system()} | Shell: {'PowerShell/CMD' if sys.platform == 'win32' else 'bash'} | IMPORTANT: Use write_file tool to create files, NEVER shell commands.", priority=2)
 
     # Add relevant search results
     try:
@@ -161,8 +164,11 @@ def run_task(user_prompt: str, workspace: str = None) -> str:
         {full_context}
         IMPORTANT: Use list_directory/read_file/semantic_search to inspect code BEFORE planning.
         Be specific about file paths. Flag dangerous operations.
+        You MUST NOT create, write, or modify any files. Only output the plan.
+        The Coder agent will execute your plan using write_file and patch_file tools.
+        For new files, include the FULL file content in your plan so the Coder can write it.
         """,
-        expected_output="[UNDERSTAND] Analysis  [PLAN] Numbered steps  [RISKS] Dangers",
+        expected_output="[UNDERSTAND] Analysis  [PLAN] Numbered steps with file paths and full file contents  [RISKS] Dangers",
         agent=planner,
     )
 
@@ -170,12 +176,19 @@ def run_task(user_prompt: str, workspace: str = None) -> str:
     print_phase("EXECUTE", "  Implementing...")
     coding_task = Task(
         description=f"""
-        USTAAD Execution Phase. Implement the plan.
+        USTAAD Execution Phase. Implement the plan from the Planner.
         Request: {user_prompt}
         Workspace: {workspace}
-        RULES: Read before write. Use patch_file for edits. Production-ready code only.
+        Platform: {platform.system()}
+        RULES:
+        - Read existing files before modifying them.
+        - Use `write_file` tool to create new files (pass path and full content).
+        - Use `patch_file` tool for surgical edits to existing files.
+        - NEVER use `run_command` to create or write files (no echo, type, cat, heredoc, shell redirection).
+        - Write production-ready, complete code. No placeholders or TODOs.
+        - Create ALL files specified in the plan.
         """,
-        expected_output="[CREATING/MODIFYING/COMPLETE] Summary of changes",
+        expected_output="[CREATING/MODIFYING/COMPLETE] Summary of all files created and modified",
         agent=coder,
         context=[planning_task],
     )
