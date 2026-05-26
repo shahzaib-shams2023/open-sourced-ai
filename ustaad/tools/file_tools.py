@@ -114,7 +114,7 @@ def list_directory_tool(path: str) -> str:
         if not p.is_dir():
             return f"Error: Not a directory: {path}"
 
-        skip = {".git", "node_modules", "venv", ".venv", "__pycache__", "memory", ".mypy_cache"}
+        skip = {".git", ".ustaad", "node_modules", "venv", ".venv", "__pycache__", "memory", ".mypy_cache"}
         entries = []
 
         for item in sorted(p.iterdir()):

@@ -101,24 +101,31 @@ def run_task(user_prompt: str, workspace: str = None) -> str:
     scan_ctx = scan.to_context_string()
     console.print(scan_ctx)
 
-    # --- INDEX ---
-    print_phase("INDEX", "  Building repository index...")
-    try:
-        indexer = RepoIndexer(workspace)
-        repo_idx = indexer.build_index()
-        idx_ctx = repo_idx.to_context_string()
-        console.print(idx_ctx)
-    except Exception:
-        idx_ctx = "[INDEX] Indexing skipped"
-        console.print("  Skipped (non-critical)")
+    # Detect if workspace is empty (greenfield project)
+    is_empty_workspace = scan.file_count == 0
 
-    # --- SEARCH INDEX ---
-    try:
-        search_engine = SearchEngine(workspace)
-        chunks = search_engine.index_workspace()
-        print_phase("SEARCH", f"  Indexed {chunks} code chunks for semantic search")
-    except Exception:
-        console.print("  [dim]Search index skipped[/dim]")
+    # --- INDEX (skip for empty workspaces) ---
+    idx_ctx = "[INDEX] Indexing skipped"
+    search_engine = None
+    if not is_empty_workspace:
+        print_phase("INDEX", "  Building repository index...")
+        try:
+            indexer = RepoIndexer(workspace)
+            repo_idx = indexer.build_index()
+            idx_ctx = repo_idx.to_context_string()
+            console.print(idx_ctx)
+        except Exception:
+            console.print("  Skipped (non-critical)")
+
+        # --- SEARCH INDEX ---
+        try:
+            search_engine = SearchEngine(workspace)
+            chunks = search_engine.index_workspace()
+            print_phase("SEARCH", f"  Indexed {chunks} code chunks for semantic search")
+        except Exception:
+            console.print("  [dim]Search index skipped[/dim]")
+    else:
+        console.print("  [dim]Empty workspace — skipping index/search[/dim]")
 
     # --- UNDERSTAND ---
     print_phase("UNDERSTAND")
@@ -146,27 +153,36 @@ def run_task(user_prompt: str, workspace: str = None) -> str:
     ctx.add("EXECUTION MODE", f"{mode_label} | Dangerous ops require confirmation.", priority=30)
     ctx.add("PLATFORM", f"OS: {platform.system()} | Shell: {'PowerShell/CMD' if sys.platform == 'win32' else 'bash'} | IMPORTANT: Use write_file tool to create files, NEVER shell commands.", priority=2)
 
-    # Add relevant search results
-    try:
-        search_results = search_engine.search_formatted(user_prompt, n_results=3)
-        if "No results" not in search_results:
-            ctx.add("RELEVANT CODE", search_results, priority=8)
-    except Exception:
-        pass
+    # Add relevant search results (only for non-empty workspaces)
+    if search_engine is not None:
+        try:
+            search_results = search_engine.search_formatted(user_prompt, n_results=3)
+            if "No results" not in search_results:
+                ctx.add("RELEVANT CODE", search_results, priority=8)
+        except Exception:
+            pass
 
     full_context = ctx.build()
 
     # --- PLAN ---
     print_phase("PLAN", "  Creating implementation plan...")
+    if is_empty_workspace:
+        plan_instructions = """
+        The workspace is EMPTY. Do NOT use any tools. Do NOT explore.
+        Immediately output your plan with full file contents for all files to create.
+        The Coder agent will use write_file to create each file.
+        """
+    else:
+        plan_instructions = """
+        Use list_directory to understand the project, then output your plan.
+        Do NOT create, write, or modify files. The Coder agent does that.
+        For new files, include FULL file content. For edits, specify what to change.
+        """
     planning_task = Task(
         description=f"""
-        USTAAD Planning Phase. Analyze workspace and create implementation plan.
+        USTAAD Planning Phase. Create an implementation plan.
         {full_context}
-        IMPORTANT: Use list_directory/read_file/semantic_search to inspect code BEFORE planning.
-        Be specific about file paths. Flag dangerous operations.
-        You MUST NOT create, write, or modify any files. Only output the plan.
-        The Coder agent will execute your plan using write_file and patch_file tools.
-        For new files, include the FULL file content in your plan so the Coder can write it.
+        {plan_instructions}
         """,
         expected_output="[UNDERSTAND] Analysis  [PLAN] Numbered steps with file paths and full file contents  [RISKS] Dangers",
         agent=planner,

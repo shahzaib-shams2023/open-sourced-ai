@@ -142,7 +142,7 @@ TEST_FRAMEWORK_INDICATORS = {
 }
 
 SKIP_DIRS = {
-    ".git", "node_modules", "venv", ".venv", "env", "__pycache__",
+    ".git", ".ustaad", "node_modules", "venv", ".venv", "env", "__pycache__",
     ".mypy_cache", ".pytest_cache", ".ruff_cache", ".next", ".nuxt",
     "dist", "build", "target", ".tox", "eggs", "*.egg-info",
     "memory", "artifacts", ".idea", ".vscode",
