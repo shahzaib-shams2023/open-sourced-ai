@@ -1,4 +1,5 @@
 import os
+os.environ.setdefault("OPENAI_API_KEY", "na")
 
 from crewai import Task, Crew
 

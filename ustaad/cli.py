@@ -1,4 +1,5 @@
 import os
+os.environ.setdefault("OPENAI_API_KEY", "na")
 import typer
 
 from rich.console import Console

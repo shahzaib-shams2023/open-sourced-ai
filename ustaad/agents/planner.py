@@ -1,5 +1,5 @@
 from crewai import Agent
-from llm import load_model
+from ustaad.llm import load_model
 
 planner = Agent(
     role="Project Planner",
