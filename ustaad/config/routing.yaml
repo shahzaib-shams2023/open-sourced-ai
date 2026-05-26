@@ -9,28 +9,52 @@
 #   embeddings         → nomic-embed-text
 
 planner:
-  model: gemma3:12b
+  default: gemma3:12b
+  trivial: gemma3:12b
+  standard: gemma3:12b
+  complex: deepseek-r1:32b
 
 coder:
-  model: gemma3:12b
+  default: gemma3:12b
+  trivial: gemma3:12b
+  standard: qwen3:32b
+  complex: qwen3:32b
 
 reviewer:
-  model: gemma3:12b
+  default: gemma3:12b
+  trivial: gemma3:12b
+  standard: gemma3:12b
+  complex: qwen3:32b
 
 researcher:
-  model: mistral:latest
+  default: mistral:latest
+  trivial: mistral:latest
+  standard: mistral:latest
+  complex: gemma3:12b
 
 security:
-  model: gemma3:12b
+  default: gemma3:12b
+  trivial: gemma3:12b
+  standard: gemma3:12b
+  complex: qwen3:32b
 
 devops:
-  model: gemma3:12b
+  default: gemma3:12b
+  trivial: gemma3:12b
+  standard: gemma3:12b
+  complex: qwen3:32b
 
 debugger:
-  model: gemma3:12b
+  default: gemma3:12b
+  trivial: gemma3:12b
+  standard: qwen3:32b
+  complex: deepseek-r1:32b
 
 shell:
-  model: gemma3:12b
+  default: gemma3:12b
+  trivial: mistral:latest
+  standard: gemma3:12b
+  complex: gemma3:12b
 
 # Execution mode defaults
 execution:

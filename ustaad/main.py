@@ -49,6 +49,7 @@ from ustaad.engine.repo_index import RepoIndexer
 from ustaad.engine.patch import PatchEngine
 from ustaad.memory import ProjectMemory
 from ustaad.tools.file_tools import write_file
+from ustaad.llm import load_model_for_role_and_complexity
 
 console = Console()
 
@@ -180,6 +181,9 @@ def run_task(user_prompt: str, workspace: str = None) -> str:
         agent = AGENT_REGISTRY.get(role_name)
         if not agent:
             continue
+
+        # Dynamically assign the complexity-specific local model for optimal speed & power
+        agent.llm = load_model_for_role_and_complexity(role_name, route.complexity.value)
 
         if role_name == "planner":
             if is_empty_workspace:
@@ -355,11 +359,22 @@ def run_task(user_prompt: str, workspace: str = None) -> str:
         pipeline.phases.append(phase)
 
     # --- REFLECT ---
+    # Fetch latest git status to detect actual created/modified files
+    try:
+        latest_git_status = git_engine.status()
+        files_created = latest_git_status.untracked
+        files_modified = list(set(latest_git_status.staged + latest_git_status.modified))
+        touched_files = list(set(files_created + files_modified))
+    except Exception:
+        files_created = []
+        files_modified = []
+        touched_files = []
+
     with phase_spinner("REFLECT", "Self-evaluating...") as timer:
         reflector = ReflectionEngine()
         report = reflector.reflect(
             task_description=user_prompt,
-            files_modified=[],  # TODO: track from patch engine
+            files_modified=touched_files,
             test_passed=tests_passed,
             lint_passed=lints_passed,
         )
@@ -368,8 +383,8 @@ def run_task(user_prompt: str, workspace: str = None) -> str:
     # --- COMPLETE ---
     completion_summary(
         pipeline=pipeline,
-        files_created=[],
-        files_modified=[],
+        files_created=files_created,
+        files_modified=files_modified,
         test_passed=tests_passed,
         lint_passed=lints_passed,
         score=report.score,

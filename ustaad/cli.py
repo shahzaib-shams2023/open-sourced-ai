@@ -263,7 +263,6 @@ def run_interactive():
 @app.callback(invoke_without_command=True)
 def main(
     ctx: typer.Context,
-    prompt: list[str] = typer.Argument(None, help="Task prompt"),
     safe: bool = typer.Option(False, "--safe", "-s", help="Safe mode"),
     autonomous: bool = typer.Option(False, "--autonomous", "--yolo", help="Autonomous mode"),
     debug_mode: bool = typer.Option(False, "--debug", "-d", help="Force debug classification"),
@@ -276,11 +275,21 @@ def main(
         set_mode(safe=True, autonomous=False, confirm_destructive=True)
     if no_confirm:
         set_mode(confirm_destructive=False)
+    
     if ctx.invoked_subcommand is not None:
         return
-    if not prompt:
+
+    # Extract prompt manually from sys.argv filtering out flags
+    prompt_args = [arg for arg in sys.argv[1:] if not arg.startswith("-")]
+    
+    # If the first positional arg is a known subcommand, do not treat as a prompt
+    if prompt_args and prompt_args[0] in ["scan", "index", "search", "test", "git", "mode", "memory", "routing"]:
+        return
+
+    if not prompt_args:
         run_interactive()
         return
+
     if not is_ollama_running():
         error_panel(
             "Ollama Not Running",
@@ -288,7 +297,8 @@ def main(
             "Start Ollama with: ollama serve",
         )
         raise typer.Exit(code=1)
-    user_prompt = " ".join(prompt)
+
+    user_prompt = " ".join(prompt_args)
     if debug_mode:
         user_prompt = f"[debug] {user_prompt}"
     console.print(BANNER_PREMIUM)

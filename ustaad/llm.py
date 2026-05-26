@@ -58,31 +58,51 @@ def load_model(model_name: str) -> LLM:
     return llm
 
 
-def load_model_for_role(role: str) -> LLM:
+def load_model_for_role_and_complexity(role: str, complexity: str = None) -> LLM:
     """
-    Load the model assigned to a specific agent role from routing.yaml.
-    Falls back to gemma3:12b if not configured.
+    Load the model assigned to a specific agent role and task complexity from routing.yaml.
+    Falls back to role-level default, then to gemma3:12b.
     """
     config = _load_config()
     role_config = config.get(role, {})
 
     if isinstance(role_config, dict):
-        model_name = role_config.get("model", "gemma3:12b")
+        if complexity and complexity in role_config:
+            model_name = role_config[complexity]
+        elif "model" in role_config:
+            model_name = role_config["model"]
+        else:
+            model_name = role_config.get("default", "gemma3:12b")
     else:
-        model_name = "gemma3:12b"
+        model_name = role_config or "gemma3:12b"
 
     return load_model(model_name)
+
+
+def load_model_for_role(role: str) -> LLM:
+    """
+    Load the model assigned to a specific agent role from routing.yaml.
+    Falls back to gemma3:12b if not configured.
+    """
+    return load_model_for_role_and_complexity(role, None)
 
 
 def get_routing_summary() -> str:
     """Return a formatted summary of model routing."""
     config = _load_config()
-    lines = ["[ROUTING] Agent -> Model"]
+    lines = ["[ROUTING] Agent -> Model Mapping"]
     for role, cfg in config.items():
-        if role == "execution":
+        if role in ("execution", "repair", "context"):
             continue
         if isinstance(cfg, dict):
-            model = cfg.get("model", "default")
+            details = []
+            for comp in ("trivial", "standard", "complex"):
+                if comp in cfg:
+                    details.append(f"{comp}:{cfg[comp]}")
+            if details:
+                model = f"{cfg.get('default', 'default')} ({', '.join(details)})"
+            else:
+                model = cfg.get("model", "default")
         else:
             model = str(cfg)
         lines.append(f"  {role:12s} -> {model}")
