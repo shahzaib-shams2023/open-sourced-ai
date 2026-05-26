@@ -12,7 +12,7 @@ planner:
   model: gemma3:12b
 
 coder:
-  model: gemma3:12b
+  model: qwen3:32b
 
 reviewer:
   model: gemma3:12b
