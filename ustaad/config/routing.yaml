@@ -1,5 +1,12 @@
 # USTAAD Agent Model Routing
 # Maps each agent role to its preferred Ollama model
+#
+# Available models per task type:
+#   reasoning/planning → deepseek-coder, gemma3:12b
+#   coding             → qwen2.5-coder, gemma3:12b
+#   review/security    → gemma3:12b
+#   fast tasks         → gemma3:4b
+#   embeddings         → nomic-embed-text
 
 planner:
   model: gemma3:12b
@@ -19,6 +26,9 @@ security:
 devops:
   model: gemma3:12b
 
+debugger:
+  model: gemma3:12b
+
 shell:
   model: gemma3:12b
 
@@ -27,3 +37,14 @@ execution:
   safe: true
   autonomous: false
   confirm_destructive: true
+
+# Repair loop settings
+repair:
+  max_attempts: 5
+  auto_run: true
+
+# Context management
+context:
+  max_chars: 60000
+  chunk_size: 60
+  chunk_overlap: 10

@@ -10,6 +10,7 @@ from crewai import Agent
 from ustaad.llm import load_model
 from ustaad.tools.file_tools import read_file_tool, list_directory_tool, search_files_tool
 from ustaad.tools.shell_tools import run_command_tool
+from ustaad.tools.search_tools import semantic_search_tool, index_codebase_tool
 
 PLANNER_BACKSTORY = """
 You are the Planning Agent of USTAAD — an elite autonomous software engineering system.
@@ -59,7 +60,7 @@ planner = Agent(
 
     verbose=True,
     allow_delegation=False,
-    tools=[read_file_tool, list_directory_tool, search_files_tool, run_command_tool],
+    tools=[read_file_tool, list_directory_tool, search_files_tool, run_command_tool, semantic_search_tool, index_codebase_tool],
 
     llm=load_model("gemma3:12b"),
 )

@@ -125,10 +125,10 @@ class SafetyGate:
         }.get(risk_level, "bold yellow")
 
         risk_label = {
-            "dangerous": "⚠ HIGH RISK",
-            "normal": "⚡ NEEDS APPROVAL",
-            "safe": "✓ SAFE",
-        }.get(risk_level, "⚡ NEEDS APPROVAL")
+            "dangerous": "[!] HIGH RISK",
+            "normal": "[*] NEEDS APPROVAL",
+            "safe": "[OK] SAFE",
+        }.get(risk_level, "[*] NEEDS APPROVAL")
 
         panel_content = Text.assemble(
             ("USTAAD wants to perform:\n\n", "bold white"),
@@ -139,7 +139,7 @@ class SafetyGate:
         console.print()
         console.print(Panel(
             panel_content,
-            title=f"[bold cyan]🛡 {action_type}[/bold cyan]",
+            title=f"[bold cyan][SAFETY] {action_type}[/bold cyan]",
             border_style="cyan",
             padding=(1, 2),
         ))

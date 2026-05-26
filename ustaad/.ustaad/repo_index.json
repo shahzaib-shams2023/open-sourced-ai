@@ -1,0 +1,853 @@
+{
+  "workspace": "e:\\work\\open-sourced-ai\\ustaad",
+  "modules": {
+    "cli.py": {
+      "path": "cli.py",
+      "language": "Python",
+      "imports": [
+        "import os",
+        "import sys",
+        "import socket",
+        "from dotenv import load_dotenv",
+        "import typer",
+        "from rich.console import Console",
+        "from rich.markdown import Markdown",
+        "from rich.panel import Panel",
+        "from ustaad.main import run_task",
+        "from ustaad.core.execution_mode import get_mode, set_mode",
+        "from ustaad.core.scanner import WorkspaceScanner"
+      ],
+      "exports": [],
+      "classes": [],
+      "functions": [
+        "is_ollama_running",
+        "print_mode",
+        "cmd_scan",
+        "cmd_index",
+        "cmd_search",
+        "cmd_test",
+        "cmd_git",
+        "cmd_mode",
+        "cmd_memory",
+        "cmd_routing",
+        "run_interactive",
+        "main"
+      ],
+      "lines": 256
+    },
+    "llm.py": {
+      "path": "llm.py",
+      "language": "Python",
+      "imports": [
+        "import os",
+        "import yaml",
+        "from crewai import LLM",
+        "from pathlib import Path"
+      ],
+      "exports": [],
+      "classes": [],
+      "functions": [
+        "_load_config",
+        "load_model",
+        "load_model_for_role",
+        "get_routing_summary"
+      ],
+      "lines": 87
+    },
+    "main.py": {
+      "path": "main.py",
+      "language": "Python",
+      "imports": [
+        "import os",
+        "import time",
+        "from dotenv import load_dotenv",
+        "from crewai import Task, Crew",
+        "from rich.console import Console",
+        "from ustaad.agents.planner import planner",
+        "from ustaad.agents.coder import coder",
+        "from ustaad.agents.reviewer import reviewer",
+        "from ustaad.agents.researcher import researcher",
+        "from ustaad.agents.security import security_agent",
+        "from ustaad.agents.devops import devops_agent",
+        "from ustaad.agents.debugger import debugger",
+        "from ustaad.core.scanner import WorkspaceScanner",
+        "from ustaad.core.execution_mode import get_mode",
+        "from ustaad.engine.git import GitEngine",
+        "from ustaad.engine.testing import TestEngine",
+        "from ustaad.engine.search import SearchEngine",
+        "from ustaad.engine.reflection import ReflectionEngine",
+        "from ustaad.engine.context import ContextManager",
+        "from ustaad.engine.repo_index import RepoIndexer",
+        "from ustaad.engine.patch import PatchEngine",
+        "from ustaad.memory import ProjectMemory",
+        "from ustaad.tools.file_tools import write_file"
+      ],
+      "exports": [],
+      "classes": [],
+      "functions": [
+        "classify_task",
+        "print_phase",
+        "run_task"
+      ],
+      "lines": 280
+    },
+    "__init__.py": {
+      "path": "__init__.py",
+      "language": "Python",
+      "imports": [],
+      "exports": [],
+      "classes": [],
+      "functions": [],
+      "lines": 0
+    },
+    "agents\\coder.py": {
+      "path": "agents\\coder.py",
+      "language": "Python",
+      "imports": [
+        "from crewai import Agent",
+        "from ustaad.llm import load_model",
+        "from ustaad.tools.file_tools import (",
+        "from ustaad.tools.shell_tools import run_command_tool",
+        "from ustaad.tools.patch_tools import patch_file_tool, preview_diff_tool",
+        "from ustaad.tools.git_tools import git_status_tool",
+        "from ustaad.tools.test_tools import run_tests_tool",
+        "from ustaad.tools.search_tools import semantic_search_tool"
+      ],
+      "exports": [],
+      "classes": [],
+      "functions": [],
+      "lines": 85
+    },
+    "agents\\debugger.py": {
+      "path": "agents\\debugger.py",
+      "language": "Python",
+      "imports": [
+        "from crewai import Agent",
+        "from ustaad.llm import load_model",
+        "from ustaad.tools.file_tools import read_file_tool, list_directory_tool, search_files_tool",
+        "from ustaad.tools.shell_tools import run_command_tool",
+        "from ustaad.tools.patch_tools import patch_file_tool, preview_diff_tool",
+        "from ustaad.tools.test_tools import run_tests_tool, run_linters_tool",
+        "from ustaad.tools.search_tools import semantic_search_tool"
+      ],
+      "exports": [],
+      "classes": [],
+      "functions": [],
+      "lines": 56
+    },
+    "agents\\devops.py": {
+      "path": "agents\\devops.py",
+      "language": "Python",
+      "imports": [
+        "from crewai import Agent",
+        "from ustaad.llm import load_model",
+        "from ustaad.tools.file_tools import (",
+        "from ustaad.tools.shell_tools import run_command_tool"
+      ],
+      "exports": [],
+      "classes": [],
+      "functions": [],
+      "lines": 69
+    },
+    "agents\\planner.py": {
+      "path": "agents\\planner.py",
+      "language": "Python",
+      "imports": [
+        "from crewai import Agent",
+        "from ustaad.llm import load_model",
+        "from ustaad.tools.file_tools import read_file_tool, list_directory_tool, search_files_tool",
+        "from ustaad.tools.shell_tools import run_command_tool",
+        "from ustaad.tools.search_tools import semantic_search_tool, index_codebase_tool"
+      ],
+      "exports": [],
+      "classes": [],
+      "functions": [],
+      "lines": 66
+    },
+    "agents\\researcher.py": {
+      "path": "agents\\researcher.py",
+      "language": "Python",
+      "imports": [
+        "from crewai import Agent",
+        "from ustaad.llm import load_model",
+        "from ustaad.tools.file_tools import read_file_tool, list_directory_tool, search_files_tool",
+        "from ustaad.tools.shell_tools import run_command_tool"
+      ],
+      "exports": [],
+      "classes": [],
+      "functions": [],
+      "lines": 60
+    },
+    "agents\\reviewer.py": {
+      "path": "agents\\reviewer.py",
+      "language": "Python",
+      "imports": [
+        "from crewai import Agent",
+        "from ustaad.llm import load_model",
+        "from ustaad.tools.file_tools import read_file_tool, list_directory_tool, search_files_tool",
+        "from ustaad.tools.shell_tools import run_command_tool",
+        "from ustaad.tools.test_tools import run_tests_tool, run_linters_tool, run_all_checks_tool",
+        "from ustaad.tools.search_tools import semantic_search_tool"
+      ],
+      "exports": [],
+      "classes": [],
+      "functions": [],
+      "lines": 80
+    },
+    "agents\\security.py": {
+      "path": "agents\\security.py",
+      "language": "Python",
+      "imports": [
+        "from crewai import Agent",
+        "from ustaad.llm import load_model",
+        "from ustaad.tools.file_tools import read_file_tool, list_directory_tool, search_files_tool",
+        "from ustaad.tools.shell_tools import run_command_tool"
+      ],
+      "exports": [],
+      "classes": [],
+      "functions": [],
+      "lines": 74
+    },
+    "agents\\shell_agent.py": {
+      "path": "agents\\shell_agent.py",
+      "language": "Python",
+      "imports": [
+        "from crewai import Agent",
+        "from ustaad.llm import load_model",
+        "from ustaad.tools.shell_tools import run_command_tool"
+      ],
+      "exports": [],
+      "classes": [],
+      "functions": [],
+      "lines": 50
+    },
+    "agents\\__init__.py": {
+      "path": "agents\\__init__.py",
+      "language": "Python",
+      "imports": [],
+      "exports": [],
+      "classes": [],
+      "functions": [],
+      "lines": 0
+    },
+    "browser\\browser_agent.py": {
+      "path": "browser\\browser_agent.py",
+      "language": "Python",
+      "imports": [
+        "from browser_use import Agent",
+        "from langchain_ollama import ChatOllama"
+      ],
+      "exports": [],
+      "classes": [],
+      "functions": [],
+      "lines": 12
+    },
+    "core\\execution_mode.py": {
+      "path": "core\\execution_mode.py",
+      "language": "Python",
+      "imports": [
+        "from dataclasses import dataclass, field",
+        "from typing import Optional",
+        "import re"
+      ],
+      "exports": [],
+      "classes": [
+        "ExecutionMode"
+      ],
+      "functions": [
+        "get_mode",
+        "set_mode"
+      ],
+      "lines": 174
+    },
+    "core\\safety.py": {
+      "path": "core\\safety.py",
+      "language": "Python",
+      "imports": [
+        "import os",
+        "from typing import Optional",
+        "from rich.console import Console",
+        "from rich.panel import Panel",
+        "from rich.text import Text",
+        "from ustaad.core.execution_mode import get_mode"
+      ],
+      "exports": [],
+      "classes": [
+        "SafetyGate"
+      ],
+      "functions": [
+        "get_safety_gate"
+      ],
+      "lines": 170
+    },
+    "core\\scanner.py": {
+      "path": "core\\scanner.py",
+      "language": "Python",
+      "imports": [
+        "import os",
+        "import json",
+        "from pathlib import Path",
+        "from dataclasses import dataclass, field",
+        "from typing import Optional"
+      ],
+      "exports": [],
+      "classes": [
+        "ScanResult",
+        "WorkspaceScanner"
+      ],
+      "functions": [],
+      "lines": 362
+    },
+    "core\\__init__.py": {
+      "path": "core\\__init__.py",
+      "language": "Python",
+      "imports": [],
+      "exports": [],
+      "classes": [],
+      "functions": [],
+      "lines": 5
+    },
+    "docker\\docker_runner.py": {
+      "path": "docker\\docker_runner.py",
+      "language": "Python",
+      "imports": [
+        "import docker"
+      ],
+      "exports": [],
+      "classes": [],
+      "functions": [
+        "run_container"
+      ],
+      "lines": 21
+    },
+    "engine\\context.py": {
+      "path": "engine\\context.py",
+      "language": "Python",
+      "imports": [
+        "import os",
+        "from pathlib import Path",
+        "from dataclasses import dataclass, field"
+      ],
+      "exports": [],
+      "classes": [
+        "ContextBlock",
+        "ContextManager"
+      ],
+      "functions": [],
+      "lines": 76
+    },
+    "engine\\git.py": {
+      "path": "engine\\git.py",
+      "language": "Python",
+      "imports": [
+        "import os",
+        "import re",
+        "from dataclasses import dataclass, field",
+        "from typing import Optional",
+        "from ustaad.tools.shell_tools import run_command, run_command_safe"
+      ],
+      "exports": [],
+      "classes": [
+        "GitStatus",
+        "GitEngine"
+      ],
+      "functions": [],
+      "lines": 266
+    },
+    "engine\\patch.py": {
+      "path": "engine\\patch.py",
+      "language": "Python",
+      "imports": [
+        "import os",
+        "import re",
+        "import shutil",
+        "import difflib",
+        "import hashlib",
+        "from pathlib import Path",
+        "from datetime import datetime",
+        "from dataclasses import dataclass, field",
+        "from typing import Optional",
+        "from ustaad.core.safety import get_safety_gate"
+      ],
+      "exports": [],
+      "classes": [
+        "PatchHunk",
+        "PatchResult",
+        "FileSnapshot",
+        "PatchEngine"
+      ],
+      "functions": [],
+      "lines": 258
+    },
+    "engine\\reflection.py": {
+      "path": "engine\\reflection.py",
+      "language": "Python",
+      "imports": [
+        "from dataclasses import dataclass, field"
+      ],
+      "exports": [],
+      "classes": [
+        "ReflectionReport",
+        "ReflectionEngine"
+      ],
+      "functions": [],
+      "lines": 101
+    },
+    "engine\\repair.py": {
+      "path": "engine\\repair.py",
+      "language": "Python",
+      "imports": [
+        "import os",
+        "import time",
+        "from dataclasses import dataclass, field",
+        "from typing import Optional, Callable",
+        "from rich.console import Console",
+        "from ustaad.engine.testing import TestEngine, TestResult, LintResult"
+      ],
+      "exports": [],
+      "classes": [
+        "RepairAttempt",
+        "RepairSession",
+        "RepairLoop"
+      ],
+      "functions": [],
+      "lines": 172
+    },
+    "engine\\repo_index.py": {
+      "path": "engine\\repo_index.py",
+      "language": "Python",
+      "imports": [
+        "import os",
+        "import re",
+        "import json",
+        "from pathlib import Path",
+        "from dataclasses import dataclass, field, asdict"
+      ],
+      "exports": [],
+      "classes": [
+        "hierarchies",
+        "ModuleInfo",
+        "RepoIndex",
+        "RepoIndexer"
+      ],
+      "functions": [],
+      "lines": 150
+    },
+    "engine\\search.py": {
+      "path": "engine\\search.py",
+      "language": "Python",
+      "imports": [
+        "import os",
+        "import hashlib",
+        "from pathlib import Path",
+        "from dataclasses import dataclass, field",
+        "import chromadb"
+      ],
+      "exports": [],
+      "classes": [
+        "SearchResult",
+        "SearchEngine"
+      ],
+      "functions": [],
+      "lines": 128
+    },
+    "engine\\testing.py": {
+      "path": "engine\\testing.py",
+      "language": "Python",
+      "imports": [
+        "import os",
+        "import re",
+        "from dataclasses import dataclass, field",
+        "from typing import Optional",
+        "from ustaad.tools.shell_tools import run_command",
+        "from ustaad.core.scanner import WorkspaceScanner, ScanResult"
+      ],
+      "exports": [],
+      "classes": [
+        "TestResult",
+        "LintResult",
+        "TestEngine"
+      ],
+      "functions": [],
+      "lines": 284
+    },
+    "engine\\__init__.py": {
+      "path": "engine\\__init__.py",
+      "language": "Python",
+      "imports": [],
+      "exports": [],
+      "classes": [],
+      "functions": [],
+      "lines": 13
+    },
+    "gui\\gui_agent.py": {
+      "path": "gui\\gui_agent.py",
+      "language": "Python",
+      "imports": [
+        "import pyautogui"
+      ],
+      "exports": [],
+      "classes": [],
+      "functions": [
+        "click",
+        "type_text",
+        "screenshot"
+      ],
+      "lines": 10
+    },
+    "mcp\\server.py": {
+      "path": "mcp\\server.py",
+      "language": "Python",
+      "imports": [
+        "from mcp.server.fastmcp import FastMCP"
+      ],
+      "exports": [],
+      "classes": [],
+      "functions": [
+        "read_file"
+      ],
+      "lines": 12
+    },
+    "rag\\rag_system.py": {
+      "path": "rag\\rag_system.py",
+      "language": "Python",
+      "imports": [
+        "from llama_index.core import ("
+      ],
+      "exports": [],
+      "classes": [],
+      "functions": [],
+      "lines": 20
+    },
+    "swarm\\swarm.py": {
+      "path": "swarm\\swarm.py",
+      "language": "Python",
+      "imports": [
+        "from autogen_agentchat.agents import AssistantAgent"
+      ],
+      "exports": [],
+      "classes": [],
+      "functions": [],
+      "lines": 16
+    },
+    "tools\\file_tools.py": {
+      "path": "tools\\file_tools.py",
+      "language": "Python",
+      "imports": [
+        "import os",
+        "from pathlib import Path",
+        "from crewai.tools import tool",
+        "from ustaad.core.safety import get_safety_gate"
+      ],
+      "exports": [],
+      "classes": [],
+      "functions": [
+        "read_file",
+        "write_file",
+        "append_file",
+        "delete_file",
+        "read_file_tool",
+        "write_file_tool",
+        "append_file_tool",
+        "delete_file_tool",
+        "list_directory_tool",
+        "search_files_tool"
+      ],
+      "lines": 178
+    },
+    "tools\\git_tools.py": {
+      "path": "tools\\git_tools.py",
+      "language": "Python",
+      "imports": [
+        "from crewai.tools import tool"
+      ],
+      "exports": [],
+      "classes": [],
+      "functions": [
+        "git_status_tool",
+        "git_diff_tool",
+        "git_log_tool",
+        "git_commit_tool",
+        "git_auto_commit_tool"
+      ],
+      "lines": 51
+    },
+    "tools\\memory_tools.py": {
+      "path": "tools\\memory_tools.py",
+      "language": "Python",
+      "imports": [
+        "import chromadb",
+        "import uuid"
+      ],
+      "exports": [],
+      "classes": [],
+      "functions": [
+        "save_memory",
+        "search_memory"
+      ],
+      "lines": 26
+    },
+    "tools\\patch_tools.py": {
+      "path": "tools\\patch_tools.py",
+      "language": "Python",
+      "imports": [
+        "from crewai.tools import tool"
+      ],
+      "exports": [],
+      "classes": [],
+      "functions": [
+        "patch_file_tool",
+        "preview_diff_tool",
+        "rollback_file_tool"
+      ],
+      "lines": 49
+    },
+    "tools\\search_tools.py": {
+      "path": "tools\\search_tools.py",
+      "language": "Python",
+      "imports": [
+        "from crewai.tools import tool"
+      ],
+      "exports": [],
+      "classes": [],
+      "functions": [
+        "semantic_search_tool",
+        "index_codebase_tool"
+      ],
+      "lines": 31
+    },
+    "tools\\shell_tools.py": {
+      "path": "tools\\shell_tools.py",
+      "language": "Python",
+      "imports": [
+        "import subprocess",
+        "from crewai.tools import tool",
+        "from ustaad.core.safety import get_safety_gate",
+        "from ustaad.core.execution_mode import get_mode"
+      ],
+      "exports": [],
+      "classes": [],
+      "functions": [
+        "run_command",
+        "run_command_safe",
+        "run_command_tool"
+      ],
+      "lines": 88
+    },
+    "tools\\test_tools.py": {
+      "path": "tools\\test_tools.py",
+      "language": "Python",
+      "imports": [
+        "from crewai.tools import tool"
+      ],
+      "exports": [],
+      "classes": [],
+      "functions": [
+        "run_tests_tool",
+        "run_linters_tool",
+        "run_all_checks_tool"
+      ],
+      "lines": 38
+    },
+    "tools\\__init__.py": {
+      "path": "tools\\__init__.py",
+      "language": "Python",
+      "imports": [],
+      "exports": [],
+      "classes": [],
+      "functions": [],
+      "lines": 0
+    },
+    "vision\\vision_agent.py": {
+      "path": "vision\\vision_agent.py",
+      "language": "Python",
+      "imports": [
+        "from ollama import chat"
+      ],
+      "exports": [],
+      "classes": [],
+      "functions": [
+        "analyze_image"
+      ],
+      "lines": 17
+    },
+    "voice\\tts_agent.py": {
+      "path": "voice\\tts_agent.py",
+      "language": "Python",
+      "imports": [
+        "from TTS.api import TTS"
+      ],
+      "exports": [],
+      "classes": [],
+      "functions": [],
+      "lines": 10
+    },
+    "voice\\voice_agent.py": {
+      "path": "voice\\voice_agent.py",
+      "language": "Python",
+      "imports": [
+        "from faster_whisper import WhisperModel"
+      ],
+      "exports": [],
+      "classes": [],
+      "functions": [
+        "transcribe"
+      ],
+      "lines": 14
+    },
+    "vscode\\vscode_server.py": {
+      "path": "vscode\\vscode_server.py",
+      "language": "Python",
+      "imports": [
+        "import websockets",
+        "import asyncio"
+      ],
+      "exports": [],
+      "classes": [],
+      "functions": [
+        "server"
+      ],
+      "lines": 20
+    }
+  },
+  "dependency_graph": {
+    "cli.py": [
+      "main.py",
+      "core\\execution_mode.py",
+      "core\\scanner.py"
+    ],
+    "llm.py": [],
+    "main.py": [
+      "agents\\planner.py",
+      "agents\\coder.py",
+      "agents\\reviewer.py",
+      "agents\\researcher.py",
+      "engine\\search.py",
+      "agents\\security.py",
+      "agents\\devops.py",
+      "agents\\debugger.py",
+      "core\\scanner.py",
+      "core\\execution_mode.py",
+      "engine\\git.py",
+      "engine\\testing.py",
+      "engine\\search.py",
+      "engine\\reflection.py",
+      "engine\\context.py",
+      "engine\\repo_index.py",
+      "engine\\patch.py",
+      "tools\\file_tools.py"
+    ],
+    "__init__.py": [],
+    "agents\\coder.py": [
+      "llm.py",
+      "tools\\file_tools.py",
+      "tools\\shell_tools.py",
+      "engine\\patch.py",
+      "tools\\patch_tools.py",
+      "engine\\git.py",
+      "tools\\git_tools.py",
+      "tools\\test_tools.py",
+      "engine\\search.py",
+      "tools\\search_tools.py"
+    ],
+    "agents\\debugger.py": [
+      "llm.py",
+      "engine\\search.py",
+      "tools\\file_tools.py",
+      "tools\\shell_tools.py",
+      "engine\\patch.py",
+      "tools\\patch_tools.py",
+      "tools\\test_tools.py",
+      "engine\\search.py",
+      "tools\\search_tools.py"
+    ],
+    "agents\\devops.py": [
+      "llm.py",
+      "tools\\file_tools.py",
+      "tools\\shell_tools.py"
+    ],
+    "agents\\planner.py": [
+      "llm.py",
+      "engine\\search.py",
+      "tools\\file_tools.py",
+      "tools\\shell_tools.py",
+      "engine\\search.py",
+      "tools\\search_tools.py"
+    ],
+    "agents\\researcher.py": [
+      "llm.py",
+      "engine\\search.py",
+      "tools\\file_tools.py",
+      "tools\\shell_tools.py"
+    ],
+    "agents\\reviewer.py": [
+      "llm.py",
+      "engine\\search.py",
+      "tools\\file_tools.py",
+      "tools\\shell_tools.py",
+      "tools\\test_tools.py",
+      "engine\\search.py",
+      "tools\\search_tools.py"
+    ],
+    "agents\\security.py": [
+      "llm.py",
+      "engine\\search.py",
+      "tools\\file_tools.py",
+      "tools\\shell_tools.py"
+    ],
+    "agents\\shell_agent.py": [
+      "llm.py",
+      "tools\\shell_tools.py"
+    ],
+    "agents\\__init__.py": [],
+    "browser\\browser_agent.py": [],
+    "core\\execution_mode.py": [],
+    "core\\safety.py": [
+      "core\\execution_mode.py"
+    ],
+    "core\\scanner.py": [],
+    "core\\__init__.py": [],
+    "docker\\docker_runner.py": [],
+    "engine\\context.py": [],
+    "engine\\git.py": [
+      "tools\\shell_tools.py"
+    ],
+    "engine\\patch.py": [
+      "core\\safety.py"
+    ],
+    "engine\\reflection.py": [],
+    "engine\\repair.py": [
+      "engine\\testing.py"
+    ],
+    "engine\\repo_index.py": [],
+    "engine\\search.py": [],
+    "engine\\testing.py": [
+      "tools\\shell_tools.py",
+      "core\\scanner.py"
+    ],
+    "engine\\__init__.py": [],
+    "gui\\gui_agent.py": [],
+    "mcp\\server.py": [
+      "mcp\\server.py"
+    ],
+    "rag\\rag_system.py": [],
+    "swarm\\swarm.py": [],
+    "tools\\file_tools.py": [
+      "core\\safety.py"
+    ],
+    "tools\\git_tools.py": [],
+    "tools\\memory_tools.py": [],
+    "tools\\patch_tools.py": [],
+    "tools\\search_tools.py": [],
+    "tools\\shell_tools.py": [
+      "core\\safety.py",
+      "core\\execution_mode.py"
+    ],
+    "tools\\test_tools.py": [],
+    "tools\\__init__.py": [],
+    "vision\\vision_agent.py": [],
+    "voice\\tts_agent.py": [],
+    "voice\\voice_agent.py": [],
+    "vscode\\vscode_server.py": []
+  }
+}

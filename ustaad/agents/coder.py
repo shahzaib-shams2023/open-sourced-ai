@@ -12,6 +12,10 @@ from ustaad.tools.file_tools import (
     list_directory_tool, search_files_tool, delete_file_tool,
 )
 from ustaad.tools.shell_tools import run_command_tool
+from ustaad.tools.patch_tools import patch_file_tool, preview_diff_tool
+from ustaad.tools.git_tools import git_status_tool
+from ustaad.tools.test_tools import run_tests_tool
+from ustaad.tools.search_tools import semantic_search_tool
 
 CODER_BACKSTORY = """
 You are the Coding Agent of USTAAD — an elite autonomous software engineering system.
@@ -73,7 +77,8 @@ coder = Agent(
     tools=[
         read_file_tool, write_file_tool, append_file_tool,
         delete_file_tool, list_directory_tool, search_files_tool,
-        run_command_tool,
+        run_command_tool, patch_file_tool, preview_diff_tool,
+        git_status_tool, run_tests_tool, semantic_search_tool,
     ],
 
     llm=load_model("gemma3:12b"),
