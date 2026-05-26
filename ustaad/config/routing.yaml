@@ -1,14 +1,29 @@
+# USTAAD Agent Model Routing
+# Maps each agent role to its preferred Ollama model
+
 planner:
-  model: deepseek-r1:32b
+  model: gemma3:12b
 
 coder:
-  model: qwen3:32b
+  model: gemma3:12b
 
 reviewer:
-  model: deepseek-r1:32b
+  model: gemma3:12b
 
 researcher:
   model: mistral:latest
 
+security:
+  model: gemma3:12b
+
+devops:
+  model: gemma3:12b
+
 shell:
   model: gemma3:12b
+
+# Execution mode defaults
+execution:
+  safe: true
+  autonomous: false
+  confirm_destructive: true
