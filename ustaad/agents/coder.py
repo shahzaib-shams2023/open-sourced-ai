@@ -89,5 +89,5 @@ coder = Agent(
         git_status_tool, run_tests_tool, semantic_search_tool,
     ],
 
-    llm=load_model("qwen3:32b"),
+    llm=load_model("gemma3:12b"),
 )
