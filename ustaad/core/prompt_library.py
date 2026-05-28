@@ -27,7 +27,9 @@ DEFAULT_TEMPLATES = {
         "guidelines": [
             "Write modular, dry functions.",
             "Include comprehensive docstrings.",
-            "Safeguard all array bounds and memory interfaces."
+            "Safeguard all array bounds and memory interfaces.",
+            "You MUST use the write_file tool to write and create all specified files on disk. Do NOT simply print the code blocks in your final response without actually executing the write_file/patch_file tool.",
+            "You MUST use the patch_file tool for surgical edits to existing files."
         ]
     },
     "DEBUG": {

@@ -81,6 +81,10 @@ def run_task(user_prompt: str, workspace: str = None) -> str:
     workspace = workspace or os.getcwd()
     mode = get_mode()
 
+    # Defaults for verification
+    tests_passed = True
+    lints_passed = True
+
     # --- MODE ---
     mode_label = "AUTONOMOUS" if mode.autonomous else ("SAFE" if mode.safe else "SEMI-AUTO")
 
@@ -337,6 +341,13 @@ def run_task(user_prompt: str, workspace: str = None) -> str:
             console.print(f"[red]   ✗ {result}[/red]")
     pipeline.phases.append(timer)
 
+    # --- FAILSAFE FILE EXTRACTION ---
+    try:
+        from ustaad.core.failsafe import extract_and_materialize_files
+        extract_and_materialize_files(str(result), workspace)
+    except Exception as fe:
+        console.print(f"[dim yellow]   ⚠ Failsafe file extractor failed: {fe}[/dim yellow]")
+
     # --- TEST ---
     if not route.skip_tests:
         send_progress_update("TEST", "Running automated verification tests...")
@@ -426,7 +437,7 @@ def run_task(user_prompt: str, workspace: str = None) -> str:
             task_type=route.task_type.value,
             score=report.score,
             duration=time.time() - pipeline.start_time,
-            model=route.planner_model or "qwen3:8b",
+            model=route.model_override or "qwen3:8b",
             error_occurred=not tests_passed
         )
     except Exception as telemetry_error:
