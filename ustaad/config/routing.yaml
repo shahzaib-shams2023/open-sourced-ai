@@ -2,59 +2,59 @@
 # Maps each agent role to its preferred Ollama model
 #
 # Available models per task type:
-#   reasoning/planning → deepseek-r1:32b, qwen3.6:latest
-#   coding             → qwen3.6:latest
-#   review/security    → qwen3.6:latest
+#   reasoning/planning → deepseek-r1:32b, qwen3.6-2k
+#   coding             → qwen3.6-2k
+#   review/security    → qwen3.6-2k
 #   fast tasks         → gemma3:12b
 #   embeddings         → nomic-embed-text
 
 planner:
-  default: qwen3.6:latest
+  default: qwen3.6-2k
   trivial: gemma3:12b
-  standard: qwen3.6:latest
+  standard: qwen3.6-2k
   complex: deepseek-r1:32b
 
 coder:
-  default: qwen3.6:latest
+  default: qwen3.6-2k
   trivial: gemma3:12b
-  standard: qwen3.6:latest
-  complex: qwen3.6:latest
+  standard: qwen3.6-2k
+  complex: qwen3.6-2k
 
 reviewer:
-  default: qwen3.6:latest
+  default: qwen3.6-2k
   trivial: gemma3:12b
-  standard: qwen3.6:latest
-  complex: qwen3.6:latest
+  standard: qwen3.6-2k
+  complex: qwen3.6-2k
 
 researcher:
-  default: qwen3.6:latest
+  default: qwen3.6-2k
   trivial: gemma3:12b
-  standard: qwen3.6:latest
-  complex: qwen3.6:latest
+  standard: qwen3.6-2k
+  complex: qwen3.6-2k
 
 security:
-  default: qwen3.6:latest
+  default: qwen3.6-2k
   trivial: gemma3:12b
-  standard: qwen3.6:latest
-  complex: qwen3.6:latest
+  standard: qwen3.6-2k
+  complex: qwen3.6-2k
 
 devops:
-  default: qwen3.6:latest
+  default: qwen3.6-2k
   trivial: gemma3:12b
-  standard: qwen3.6:latest
-  complex: qwen3.6:latest
+  standard: qwen3.6-2k
+  complex: qwen3.6-2k
 
 debugger:
-  default: qwen3.6:latest
+  default: qwen3.6-2k
   trivial: gemma3:12b
-  standard: qwen3.6:latest
+  standard: qwen3.6-2k
   complex: deepseek-r1:32b
 
 shell:
-  default: qwen3.6:latest
+  default: qwen3.6-2k
   trivial: gemma3:12b
-  standard: qwen3.6:latest
-  complex: qwen3.6:latest
+  standard: qwen3.6-2k
+  complex: qwen3.6-2k
 
 # Execution mode defaults
 execution:
