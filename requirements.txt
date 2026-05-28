@@ -1,50 +1,49 @@
+# Core Agentic Orchestration & LLM Routing
 crewai
 crewai-tools
 litellm
 langchain
 langchain-community
 langchain-ollama
-chromadb
 ollama
+python-dotenv
+pyyaml
+
+# Interface & CLI Experience
 rich
 typer
-pyyaml
-sentence-transformers
+setuptools
 
-# Browser Automation
+# Memory & RAG Systems
+chromadb
+sentence-transformers
+llama-index
+faiss-cpu
+pypdf
+
+# Browser Automation (Web Search & Interaction)
 playwright
 browser-use
 
 # GUI Automation
 pyautogui
 
-# Vision
+# Vision & Image Processing
 pillow
 opencv-python
 transformers
 
-# Voice
+# Voice Processing (TTS & Speech-to-Text)
 faster-whisper
 sounddevice
-TTS
+coqui-tts
 
-# RAG
-llama-index
-faiss-cpu
-pypdf
-
-# MCP
+# Model Servers & Integrations
 mcp
-
-# VSCode
 websockets
-
-# Docker
 docker
 
-# Autonomous Coding
-aider-chat
-
-# Multi-agent swarms
+# Multi-Agent Swarms & Planning
 autogen-agentchat
 langgraph
+aider-chat
