@@ -13,6 +13,7 @@ pyyaml
 rich
 typer
 setuptools
+prompt-toolkit
 
 # Memory & RAG Systems
 chromadb

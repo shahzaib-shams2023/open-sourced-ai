@@ -14,6 +14,7 @@ setup(
         "rich",
         "typer",
         "chromadb",
+        "prompt-toolkit",
     ],
 
     entry_points={

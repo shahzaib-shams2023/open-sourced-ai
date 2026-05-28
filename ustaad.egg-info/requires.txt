@@ -4,3 +4,4 @@ langchain-ollama
 rich
 typer
 chromadb
+prompt-toolkit

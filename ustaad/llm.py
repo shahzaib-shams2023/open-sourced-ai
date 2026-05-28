@@ -107,3 +107,10 @@ def get_routing_summary() -> str:
             model = str(cfg)
         lines.append(f"  {role:12s} -> {model}")
     return "\n".join(lines)
+
+
+def reload_config():
+    """Clear the cached routing config to force a reload."""
+    global _config_cache
+    _config_cache = None
+

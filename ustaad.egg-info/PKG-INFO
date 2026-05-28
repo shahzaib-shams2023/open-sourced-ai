@@ -7,4 +7,5 @@ Requires-Dist: langchain-ollama
 Requires-Dist: rich
 Requires-Dist: typer
 Requires-Dist: chromadb
+Requires-Dist: prompt-toolkit
 Dynamic: requires-dist
