@@ -51,7 +51,7 @@ def load_model(model_name: str) -> LLM:
         model=model_name_full,
         temperature=0.2,
         base_url=os.environ.get("OLLAMA_BASE_URL", "http://localhost:11434"),
-        timeout=120,           # 120s per request (prevents 600s default hangs)
+        timeout=900,           # 900s per request (prevents timeouts during large generations)
         max_retries=2,         # retry on timeout/connection errors
     )
     _llm_cache[model_name] = llm
@@ -61,7 +61,7 @@ def load_model(model_name: str) -> LLM:
 def load_model_for_role_and_complexity(role: str, complexity: str = None) -> LLM:
     """
     Load the model assigned to a specific agent role and task complexity from routing.yaml.
-    Falls back to role-level default, then to gemma3:12b.
+    Falls back to role-level default, then to qwen3:8b.
     """
     config = _load_config()
     role_config = config.get(role, {})
@@ -72,9 +72,9 @@ def load_model_for_role_and_complexity(role: str, complexity: str = None) -> LLM
         elif "model" in role_config:
             model_name = role_config["model"]
         else:
-            model_name = role_config.get("default", "gemma3:12b")
+            model_name = role_config.get("default", "qwen3:8b")
     else:
-        model_name = role_config or "gemma3:12b"
+        model_name = role_config or "qwen3:8b"
 
     return load_model(model_name)
 
@@ -82,7 +82,7 @@ def load_model_for_role_and_complexity(role: str, complexity: str = None) -> LLM
 def load_model_for_role(role: str) -> LLM:
     """
     Load the model assigned to a specific agent role from routing.yaml.
-    Falls back to gemma3:12b if not configured.
+    Falls back to qwen3:8b if not configured.
     """
     return load_model_for_role_and_complexity(role, None)
 

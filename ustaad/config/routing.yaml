@@ -1,60 +1,60 @@
 # USTAAD Agent Model Routing
 # Maps each agent role to its preferred Ollama model
 #
-# Available models per task type:
-#   reasoning/planning → deepseek-r1:32b, qwen3.6-2k
-#   coding             → qwen3.6-2k
-#   review/security    → qwen3.6-2k
-#   fast tasks         → gemma3:12b
+# Available models per task type (Optimized for GTX 1060 6GB / 16GB RAM):
+#   reasoning/planning → qwen3:4b-thinking (lightweight reasoning, fully accelerated in VRAM)
+#   coding/standard    → qwen3:8b (best hardware-fit all-rounder)
+#   review/security    → qwen3:8b
+#   fast/trivial tasks → qwen3.6-2k:latest (extremely fast, low memory footprint)
 #   embeddings         → nomic-embed-text
 
 planner:
-  default: qwen3.6-2k
-  trivial: gemma3:12b
-  standard: qwen3.6-2k
-  complex: deepseek-r1:32b
+  default: qwen3:8b
+  trivial: qwen3.6-2k:latest
+  standard: qwen3:8b
+  complex: qwen3:4b-thinking
 
 coder:
-  default: qwen3.6-2k
-  trivial: gemma3:12b
-  standard: qwen3.6-2k
-  complex: qwen3.6-2k
+  default: qwen3:8b
+  trivial: qwen3.6-2k:latest
+  standard: qwen3:8b
+  complex: qwen3:8b
 
 reviewer:
-  default: qwen3.6-2k
-  trivial: gemma3:12b
-  standard: qwen3.6-2k
-  complex: qwen3.6-2k
+  default: qwen3:8b
+  trivial: qwen3.6-2k:latest
+  standard: qwen3:8b
+  complex: qwen3:8b
 
 researcher:
-  default: qwen3.6-2k
-  trivial: gemma3:12b
-  standard: qwen3.6-2k
-  complex: qwen3.6-2k
+  default: qwen3:8b
+  trivial: qwen3.6-2k:latest
+  standard: qwen3:8b
+  complex: qwen3:8b
 
 security:
-  default: qwen3.6-2k
-  trivial: gemma3:12b
-  standard: qwen3.6-2k
-  complex: qwen3.6-2k
+  default: qwen3:8b
+  trivial: qwen3.6-2k:latest
+  standard: qwen3:8b
+  complex: qwen3:8b
 
 devops:
-  default: qwen3.6-2k
-  trivial: gemma3:12b
-  standard: qwen3.6-2k
-  complex: qwen3.6-2k
+  default: qwen3:8b
+  trivial: qwen3.6-2k:latest
+  standard: qwen3:8b
+  complex: qwen3:8b
 
 debugger:
-  default: qwen3.6-2k
-  trivial: gemma3:12b
-  standard: qwen3.6-2k
-  complex: deepseek-r1:32b
+  default: qwen3:8b
+  trivial: qwen3.6-2k:latest
+  standard: qwen3:8b
+  complex: qwen3:4b-thinking
 
 shell:
-  default: qwen3.6-2k
-  trivial: gemma3:12b
-  standard: qwen3.6-2k
-  complex: qwen3.6-2k
+  default: qwen3:8b
+  trivial: qwen3.6-2k:latest
+  standard: qwen3:8b
+  complex: qwen3:8b
 
 # Execution mode defaults
 execution:
