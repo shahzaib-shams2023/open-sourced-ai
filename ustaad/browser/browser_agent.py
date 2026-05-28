@@ -7,6 +7,6 @@ browser_agent = Agent(
     """,
 
     llm=ChatOllama(
-        model="qwen3:32b"
+        model="qwen3.6:latest"
     )
 )

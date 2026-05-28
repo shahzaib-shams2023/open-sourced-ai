@@ -7,7 +7,7 @@ planner = AssistantAgent(
 
 coder = AssistantAgent(
     name="coder",
-    model_client="qwen3"
+    model_client="qwen3.6:latest"
 )
 
 reviewer = AssistantAgent(

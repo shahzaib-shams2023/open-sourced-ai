@@ -2,59 +2,59 @@
 # Maps each agent role to its preferred Ollama model
 #
 # Available models per task type:
-#   reasoning/planning → deepseek-coder, gemma3:12b
-#   coding             → qwen2.5-coder, gemma3:12b
-#   review/security    → gemma3:12b
-#   fast tasks         → gemma3:4b
+#   reasoning/planning → deepseek-r1:32b, qwen3.6:latest
+#   coding             → qwen3.6:latest
+#   review/security    → qwen3.6:latest
+#   fast tasks         → gemma3:12b
 #   embeddings         → nomic-embed-text
 
 planner:
-  default: gemma3:12b
+  default: qwen3.6:latest
   trivial: gemma3:12b
-  standard: gemma3:12b
+  standard: qwen3.6:latest
   complex: deepseek-r1:32b
 
 coder:
-  default: gemma3:12b
+  default: qwen3.6:latest
   trivial: gemma3:12b
-  standard: qwen3:32b
-  complex: qwen3:32b
+  standard: qwen3.6:latest
+  complex: qwen3.6:latest
 
 reviewer:
-  default: gemma3:12b
+  default: qwen3.6:latest
   trivial: gemma3:12b
-  standard: gemma3:12b
-  complex: qwen3:32b
+  standard: qwen3.6:latest
+  complex: qwen3.6:latest
 
 researcher:
-  default: mistral:latest
-  trivial: mistral:latest
-  standard: mistral:latest
-  complex: gemma3:12b
+  default: qwen3.6:latest
+  trivial: gemma3:12b
+  standard: qwen3.6:latest
+  complex: qwen3.6:latest
 
 security:
-  default: gemma3:12b
+  default: qwen3.6:latest
   trivial: gemma3:12b
-  standard: gemma3:12b
-  complex: qwen3:32b
+  standard: qwen3.6:latest
+  complex: qwen3.6:latest
 
 devops:
-  default: gemma3:12b
+  default: qwen3.6:latest
   trivial: gemma3:12b
-  standard: gemma3:12b
-  complex: qwen3:32b
+  standard: qwen3.6:latest
+  complex: qwen3.6:latest
 
 debugger:
-  default: gemma3:12b
+  default: qwen3.6:latest
   trivial: gemma3:12b
-  standard: qwen3:32b
+  standard: qwen3.6:latest
   complex: deepseek-r1:32b
 
 shell:
-  default: gemma3:12b
-  trivial: mistral:latest
-  standard: gemma3:12b
-  complex: gemma3:12b
+  default: qwen3.6:latest
+  trivial: gemma3:12b
+  standard: qwen3.6:latest
+  complex: qwen3.6:latest
 
 # Execution mode defaults
 execution:
