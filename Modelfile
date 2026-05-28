@@ -1,2 +1,1 @@
-FROM qwen3.6:latest
-PARAMETER num_ctx 2048
+FROM gemma3:12b
