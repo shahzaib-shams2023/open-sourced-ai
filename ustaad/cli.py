@@ -45,7 +45,9 @@ from rich.syntax import Syntax
 from prompt_toolkit import PromptSession
 from prompt_toolkit.history import FileHistory
 from prompt_toolkit.completion import Completer, Completion
-from prompt_toolkit.styles import Style# Session-wide context and telemetry metrics
+from prompt_toolkit.styles import Style
+
+# Session-wide context and telemetry metrics
 ACTIVE_CONTEXT_FILES = []
 COMMAND_STATS = {
     "commands": 0,
@@ -123,6 +125,10 @@ class UstaadCompleter(Completer):
                 "/models": "List locally installed Ollama models",
                 "/run": "Execute a shell command locally",
                 "/clear": "Clear screen",
+                "/plugins": "List loaded dynamic plugins & tools",
+                "/reload": "Reload all dynamic plugins & tools",
+                "/voice": "Transcribe .wav prompt & speak response",
+                "/vscode": "Manage background VS Code WebSocket server",
                 "/history": "View interactive prompt history",
                 "/help": "Show list of commands & shortcuts",
                 "/exit": "Exit the USTAAD session",
@@ -232,6 +238,10 @@ def print_welcome_commands():
     table.add_row("/run <cmd>", "Utility", "Execute shell command locally")
     table.add_row("/mode", "Utility", "Toggle safe/autonomous execution mode")
     table.add_row("/init", "Utility", "Initialize USTAAD.md memory in workspace")
+    table.add_row("/plugins", "Plugins", "List loaded dynamic plugins & tools")
+    table.add_row("/reload", "Plugins", "Reload all dynamic plugins & tools")
+    table.add_row("/voice <path>", "Plugins", "Transcribe audio prompt & speak response")
+    table.add_row("/vscode <action>", "Plugins", "Manage background VS Code WebSocket server")
     table.add_row("/clear", "Utility", "Clear screen")
     table.add_row("/help", "Utility", "Show this interactive command map")
     table.add_row("/exit", "Utility", "Close active USTAAD session")
@@ -243,6 +253,124 @@ def print_welcome_commands():
         padding=(0, 1),
     ))
 
+
+def cmd_plugins():
+    """List all dynamically loaded plugins and their tools."""
+    from ustaad.core.plugin_system import PluginSystem
+    from rich.table import Table
+    from rich.panel import Panel
+    
+    ps = PluginSystem(os.getcwd())
+    ps.load_all_plugins()
+    plugins = ps.loaded_plugins
+    
+    if not plugins:
+        console.print("[yellow]No active dynamic plugins loaded. Place files under .ustaad/plugins/ to add new capabilities.[/yellow]")
+        return
+        
+    table = Table(title="Dynamic Plugin & Extension Registry", show_header=True, header_style="bold cyan")
+    table.add_column("Plugin Name", style="green")
+    table.add_column("Path / Source", style="dim")
+    table.add_column("Exposed Tools", style="magenta")
+    
+    for name, data in plugins.items():
+        tools_str = ", ".join(t.name for t in data["tools"])
+        table.add_row(
+            name,
+            os.path.basename(data["path"]),
+            tools_str
+        )
+    console.print(table)
+
+
+def cmd_reload_plugins():
+    """Reload all dynamic plugins."""
+    from ustaad.core.plugin_system import PluginSystem
+    ps = PluginSystem(os.getcwd())
+    count = ps.load_all_plugins()
+    console.print(f"[bold green]✓ Successfully reloaded dynamic plugins. Total loaded: {count}[/bold green]")
+
+
+def cmd_voice(audio_path: str):
+    """Transcribe a .wav file, run it as a task, and synthesize the response to speech."""
+    import os
+    import re
+    if not os.path.exists(audio_path):
+        console.print(f"[bold red]✗ Audio file not found at '{audio_path}'[/bold red]")
+        return
+        
+    console.print(f"[bold cyan]🎤 Transcribing audio file: {audio_path}...[/bold cyan]")
+    
+    # 1. Transcribe audio using faster-whisper
+    try:
+        from ustaad.voice.voice_agent import transcribe
+        prompt_text = transcribe(audio_path)
+        console.print(f"[bold green]✓ Transcribed Prompt:[/bold green] [italic]\"{prompt_text}\"[/italic]")
+    except ImportError as ie:
+        console.print(f"[yellow]{ie}[/yellow]")
+        return
+    except Exception as e:
+        console.print(f"[bold red]✗ Transcription failed:[/bold red] {e}")
+        return
+
+    if not prompt_text.strip():
+        console.print("[yellow]⚠ Transcribed text is empty. Please speak clearly and try again.[/yellow]")
+        return
+
+    # 2. Execute the task
+    console.print("[bold cyan]🤖 Executing task in swarm...[/bold cyan]")
+    try:
+        from ustaad.main import run_task
+        response_text = run_task(prompt_text, workspace=os.getcwd())
+    except Exception as e:
+        console.print(f"[bold red]✗ Swarm execution failed:[/bold red] {e}")
+        return
+
+    # 3. Synthesize the response to speech using TTSAgent
+    console.print("[bold cyan]🔊 Synthesizing swarm response to output.wav...[/bold cyan]")
+    try:
+        from ustaad.voice.tts_agent import TTSAgent
+        tts = TTSAgent()
+        output_file = "output.wav"
+        # Strip markdown syntax for natural voice synthesis
+        clean_text = re.sub(r'[*_#`\-]+', ' ', response_text)
+        clean_text = re.sub(r'\[.*?\]\(.*?\)', '', clean_text)
+        tts.speak(clean_text, output_file)
+        console.print(f"[bold green]✓ Speech successfully synthesized to '{output_file}'![/bold green]")
+    except ImportError as ie:
+        console.print(f"[yellow]{ie}[/yellow]")
+    except Exception as e:
+        console.print(f"[bold red]✗ Voice synthesis failed:[/bold red] {e}")
+
+
+
+def cmd_vscode(action: str = "status"):
+    """Manage the VS Code IDE Integration WebSocket Server."""
+    from ustaad.vscode.vscode_server import (
+        start_vscode_server, stop_vscode_server,
+        _SERVER_THREAD, _CONNECTED_CLIENTS
+    )
+    
+    act = action.lower()
+    if act == "start":
+        if start_vscode_server():
+            console.print("[bold green]✓ Starting VS Code integration server on ws://127.0.0.1:8765[/bold green]")
+        else:
+            console.print("[yellow]⚠ VS Code Server is already active.[/yellow]")
+    elif act == "stop":
+        if stop_vscode_server():
+            console.print("[bold green]✓ Stopped VS Code integration server successfully.[/bold green]")
+        else:
+            console.print("[yellow]⚠ VS Code Server is not active.[/yellow]")
+    else:
+        is_active = _SERVER_THREAD is not None and _SERVER_THREAD.is_alive()
+        status_str = "[bold green]ACTIVE[/bold green]" if is_active else "[bold red]INACTIVE[/bold red]"
+        console.print(f"[bold cyan]VS Code Server Status:[/bold cyan] {status_str}")
+        if is_active:
+            console.print(f"  [bold]Address:[/bold] ws://127.0.0.1:8765")
+            console.print(f"  [bold]Active Connections:[/bold] {len(_CONNECTED_CLIENTS)}")
+        else:
+            console.print("[dim]Use '/vscode start' to activate the IDE WebSocket endpoint.[/dim]")
 
 
 app = typer.Typer(help="USTAAD — Autonomous Terminal-Native Engineering Agent", no_args_is_help=False)
@@ -660,6 +788,24 @@ def run_interactive():
                 continue
             elif cmd == "/models":
                 cmd_models()
+                continue
+            elif cmd == "/plugins":
+                cmd_plugins()
+                continue
+            elif cmd == "/reload":
+                cmd_reload_plugins()
+                continue
+            elif cmd == "/voice":
+                if not args:
+                    console.print("[yellow]Usage: /voice <audio_file_path.wav>[/yellow]")
+                else:
+                    cmd_voice(" ".join(args))
+                continue
+            elif cmd == "/vscode":
+                if not args:
+                    cmd_vscode("status")
+                else:
+                    cmd_vscode(" ".join(args))
                 continue
             elif cmd == "/init":
                 cmd_init()

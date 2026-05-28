@@ -25,6 +25,8 @@ pypdf
 # Browser Automation (Web Search & Interaction)
 playwright
 browser-use
+beautifulsoup4
+requests
 
 # GUI Automation
 pyautogui
@@ -37,6 +39,8 @@ transformers
 # Voice Processing (TTS & Speech-to-Text)
 faster-whisper
 sounddevice
+soundfile
+numpy
 coqui-tts
 
 # Model Servers & Integrations

@@ -54,7 +54,9 @@ def run_command_safe(command: str) -> dict:
             "blocked": True,
         }
 
-    return run_command(command)
+    from ustaad.docker.docker_runner import DockerSandbox
+    sandbox = DockerSandbox()
+    return sandbox.run(command)
 
 
 @tool("run_command")

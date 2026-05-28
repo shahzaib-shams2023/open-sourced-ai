@@ -72,6 +72,9 @@ AGENT_REGISTRY = {
 # Main loop
 # ---------------------------------------------------------------------------
 def run_task(user_prompt: str, workspace: str = None) -> str:
+    from ustaad.vscode.vscode_server import send_progress_update
+    from ustaad.core.prompt_library import PromptOptimizer
+    optimizer = PromptOptimizer()
     pipeline = PipelineProgress()
     pipeline.start_time = time.time()
     pipeline.task_description = user_prompt
@@ -82,6 +85,7 @@ def run_task(user_prompt: str, workspace: str = None) -> str:
     mode_label = "AUTONOMOUS" if mode.autonomous else ("SAFE" if mode.safe else "SEMI-AUTO")
 
     # --- SCAN ---
+    send_progress_update("SCAN", "Scanning workspace structure...")
     with phase_spinner("SCAN", workspace) as timer:
         scanner = WorkspaceScanner(workspace)
         scan = scanner.scan()
@@ -91,6 +95,7 @@ def run_task(user_prompt: str, workspace: str = None) -> str:
     is_empty_workspace = scan.file_count == 0
 
     # --- ROUTE (before heavy indexing) ---
+    send_progress_update("ROUTE", "Evaluating task complexity & routing agents...")
     route = route_task(
         user_prompt,
         file_count=scan.file_count,
@@ -115,6 +120,7 @@ def run_task(user_prompt: str, workspace: str = None) -> str:
         phase = PhaseTimer(name="INDEX", status="skipped")
         pipeline.phases.append(phase)
     else:
+        send_progress_update("INDEX", "Analyzing codebase structure & building AST index...")
         with phase_spinner("INDEX", "Building repository index...") as timer:
             try:
                 indexer = RepoIndexer(workspace)
@@ -130,6 +136,7 @@ def run_task(user_prompt: str, workspace: str = None) -> str:
         phase = PhaseTimer(name="SEARCH", status="skipped")
         pipeline.phases.append(phase)
     else:
+        send_progress_update("SEARCH", "Vectorizing code blocks for semantic context search...")
         with phase_spinner("SEARCH", "Indexing code for semantic search...") as timer:
             try:
                 search_engine = SearchEngine(workspace)
@@ -173,17 +180,35 @@ def run_task(user_prompt: str, workspace: str = None) -> str:
 
     full_context = ctx.build()
 
+    # Load dynamic plugins and extend tools for the coder agent
+    try:
+        from ustaad.core.plugin_system import PluginSystem
+        plugin_system = PluginSystem(workspace)
+        loaded_count = plugin_system.load_all_plugins()
+        if loaded_count > 0:
+            console.print(f"[bold green]✓ Loaded {loaded_count} dynamic plugin(s) with {len(plugin_system.loaded_tools)} tools.[/bold green]")
+            dynamic_tools = plugin_system.get_all_tools()
+            for dt in dynamic_tools:
+                if dt not in coder.tools:
+                    coder.tools.append(dt)
+    except Exception as e:
+        console.print(f"[yellow]   ⚠ Failed to load dynamic plugins: {e}[/yellow]")
+
     # --- BUILD PIPELINE based on routing decision ---
     agents = []
     tasks = []
 
     for role_name in route.agents_needed:
-        agent = AGENT_REGISTRY.get(role_name)
-        if not agent:
-            continue
+        if role_name == "browser":
+            from ustaad.browser.browser_agent import get_browser_agent
+            agent = get_browser_agent(llm=load_model_for_role_and_complexity(role_name, route.complexity.value))
+        else:
+            agent = AGENT_REGISTRY.get(role_name)
+            if not agent:
+                continue
 
-        # Dynamically assign the complexity-specific local model for optimal speed & power
-        agent.llm = load_model_for_role_and_complexity(role_name, route.complexity.value)
+            # Dynamically assign the complexity-specific local model for optimal speed & power
+            agent.llm = load_model_for_role_and_complexity(role_name, route.complexity.value)
 
         if role_name == "planner":
             if is_empty_workspace:
@@ -206,12 +231,16 @@ def run_task(user_prompt: str, workspace: str = None) -> str:
 
         elif role_name == "coder":
             context_tasks = [t for t in tasks]  # all prior tasks as context
+            optimized_rules = optimizer.compile_instructions("CODE")
             task = Task(
                 description=f"""
                 USTAAD Execution Phase. Implement the plan.
                 Request: {user_prompt}
                 Workspace: {workspace}
                 Platform: {platform.system()}
+                
+                {optimized_rules}
+                
                 RULES:
                 - Read existing files before modifying them.
                 - Use `write_file` tool to create new files (pass path and full content).
@@ -234,8 +263,9 @@ def run_task(user_prompt: str, workspace: str = None) -> str:
             )
 
         elif role_name == "debugger":
+            optimized_rules = optimizer.compile_instructions("DEBUG")
             task = Task(
-                description=f"USTAAD Debug Phase. Analyze error, find root cause, apply fix.\n{user_prompt}\nWorkspace: {workspace}",
+                description=f"USTAAD Debug Phase. Analyze error, find root cause, apply fix.\n{user_prompt}\nWorkspace: {workspace}\n\n{optimized_rules}",
                 expected_output="[ROOT CAUSE]  [FIX]  [VERIFY]",
                 agent=agent,
                 context=[tasks[0]] if tasks else None,
@@ -258,11 +288,19 @@ def run_task(user_prompt: str, workspace: str = None) -> str:
             )
 
         elif role_name == "researcher":
+            optimized_rules = optimizer.compile_instructions("RESEARCH")
             task = Task(
-                description=f"USTAAD Research Phase. Gather intelligence for:\n{user_prompt}\nWorkspace: {workspace}",
+                description=f"USTAAD Research Phase. Gather intelligence for:\n{user_prompt}\nWorkspace: {workspace}\n\n{optimized_rules}",
                 expected_output="[RESEARCH]  [RECOMMENDATIONS]",
                 agent=agent,
                 context=[tasks[0]] if tasks else None,
+            )
+
+        elif role_name == "browser":
+            task = Task(
+                description=f"USTAAD Browsing & Web Intelligence Phase. Navigate target URLs, extract documentation, and gather information for:\n{user_prompt}",
+                expected_output="[BROWSED URLS]  [EXTRACTED DETAILS]  [SYNTHESIZED SUMMARY]",
+                agent=agent,
             )
 
         else:
@@ -278,6 +316,7 @@ def run_task(user_prompt: str, workspace: str = None) -> str:
     elif route.task_type == TaskType.DEBUG:
         agent_phase_name = "DEBUG"
 
+    send_progress_update(agent_phase_name, "Swarm agents executing roles...")
     with phase_spinner(agent_phase_name, f"{len(agents)} agent(s) working...") as timer:
         crew = Crew(agents=agents, tasks=tasks, verbose=True)
         result = None
@@ -300,6 +339,7 @@ def run_task(user_prompt: str, workspace: str = None) -> str:
 
     # --- TEST ---
     if not route.skip_tests:
+        send_progress_update("TEST", "Running automated verification tests...")
         with phase_spinner("TEST", "Running automated checks...") as timer:
             test_engine = TestEngine(workspace, scan)
             test_results = test_engine.run_tests()
@@ -380,6 +420,18 @@ def run_task(user_prompt: str, workspace: str = None) -> str:
         )
     pipeline.phases.append(timer)
 
+    # Log telemetry for self-improving prompt optimizer
+    try:
+        optimizer.record_execution(
+            task_type=route.task_type.value,
+            score=report.score,
+            duration=time.time() - pipeline.start_time,
+            model=route.planner_model or "qwen3:8b",
+            error_occurred=not tests_passed
+        )
+    except Exception as telemetry_error:
+        console.print(f"[dim yellow]   ⚠ Telemetry recording skipped: {telemetry_error}[/dim yellow]")
+
     # --- COMPLETE ---
     completion_summary(
         pipeline=pipeline,
@@ -399,5 +451,7 @@ def run_task(user_prompt: str, workspace: str = None) -> str:
     output_path = os.path.join(workspace, "ustaad_output.md")
     write_file(output_path, str(result))
     console.print(f"[dim]   📄 Output saved: {output_path}[/dim]")
+
+    send_progress_update("COMPLETE", "Task finalized and outputs compiled.", "done")
 
     return str(result)
