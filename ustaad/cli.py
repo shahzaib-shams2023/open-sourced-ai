@@ -129,6 +129,7 @@ class UstaadCompleter(Completer):
                 "/reload": "Reload all dynamic plugins & tools",
                 "/voice": "Transcribe .wav prompt & speak response",
                 "/vscode": "Manage background VS Code WebSocket server",
+                "/doc": "Query workspace documentation semantically via RAG",
                 "/history": "View interactive prompt history",
                 "/help": "Show list of commands & shortcuts",
                 "/exit": "Exit the USTAAD session",
@@ -225,6 +226,7 @@ def print_welcome_commands():
     table.add_row("/add <file>", "Context", "Add specific file to active AI context")
     table.add_row("/drop <file>", "Context", "Remove file from active AI context")
     table.add_row("/ls", "Context", "List active AI context files")
+    table.add_row("/doc <query>", "Context", "Query workspace documentation RAG")
     table.add_row("/compact", "Context", "Optimize and compact session history")
     
     table.add_row("/diff", "Git", "View uncommitted Git differences")
@@ -373,6 +375,34 @@ def cmd_vscode(action: str = "status"):
             console.print("[dim]Use '/vscode start' to activate the IDE WebSocket endpoint.[/dim]")
 
 
+def cmd_doc(query: str):
+    """Query workspace documentation semantically via RAG System."""
+    from ustaad.rag.rag_system import RAGSystem
+    docs_dir = os.path.join(os.getcwd(), "docs")
+    if not os.path.isdir(docs_dir):
+        console.print("[yellow]No 'docs' directory found in workspace root. Please create 'docs' and add markdown files.[/yellow]")
+        return
+        
+    console.print(f"[bold cyan]🔍 Querying Workspace Documentation for:[/bold cyan] [italic]\"{query}\"[/italic]\n")
+    try:
+        rag = RAGSystem(docs_dir=docs_dir)
+        results = rag.query(query)
+        
+        # Output results nicely in a Rich panel using markdown
+        from rich.panel import Panel
+        from rich.markdown import Markdown
+        if results:
+            console.print(Panel(
+                Markdown(results),
+                title="[bold green]📚 Documentation Search Results[/bold green]",
+                border_style="green"
+            ))
+        else:
+            console.print("[yellow]No matching documentation found.[/yellow]")
+    except Exception as e:
+        console.print(f"[bold red]✗ Failed to query documentation RAG system:[/bold red] {e}")
+
+
 app = typer.Typer(help="USTAAD — Autonomous Terminal-Native Engineering Agent", no_args_is_help=False)
 
 
@@ -405,6 +435,12 @@ def cmd_search(query: str):
         e.index_workspace()
         results = e.search_formatted(query)
     console.print(results)
+
+
+@app.command("doc")
+def cli_doc(query: str):
+    """Query workspace documentation semantically via RAG."""
+    cmd_doc(query)
 
 
 @app.command("test")
@@ -800,6 +836,12 @@ def run_interactive():
                     console.print("[yellow]Usage: /voice <audio_file_path.wav>[/yellow]")
                 else:
                     cmd_voice(" ".join(args))
+                continue
+            elif cmd == "/doc":
+                if not args:
+                    console.print("[yellow]Usage: /doc <query>[/yellow]")
+                else:
+                    cmd_doc(" ".join(args))
                 continue
             elif cmd == "/vscode":
                 if not args:

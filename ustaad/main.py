@@ -150,13 +150,26 @@ def run_task(user_prompt: str, workspace: str = None) -> str:
         pipeline.phases.append(timer)
 
     # --- UNDERSTAND ---
-    with phase_spinner("UNDERSTAND", "Loading memory & git status...") as timer:
+    with phase_spinner("UNDERSTAND", "Loading memory, git status & docs...") as timer:
         memory = ProjectMemory(workspace)
         mem_ctx = memory.get_context_string(user_prompt)
 
         git_engine = GitEngine(workspace)
         git_status = git_engine.status()
         git_ctx = git_status.to_context_string()
+
+        # Dynamic RAG Documentation Query
+        rag_ctx = ""
+        try:
+            docs_dir = os.path.join(workspace, "docs")
+            if os.path.isdir(docs_dir):
+                from ustaad.rag.rag_system import RAGSystem
+                rag = RAGSystem(docs_dir=docs_dir)
+                rag_results = rag.query(user_prompt)
+                if rag_results and "No documentation files" not in rag_results and "No matching documentation" not in rag_results:
+                    rag_ctx = rag_results
+        except Exception:
+            pass
     pipeline.phases.append(timer)
 
     # --- BUILD CONTEXT (trimmed per complexity) ---
@@ -171,6 +184,8 @@ def run_task(user_prompt: str, workspace: str = None) -> str:
         ctx.add("REPOSITORY INDEX", idx_ctx, priority=10)
         ctx.add("GIT STATUS", git_ctx, priority=15)
         ctx.add("MEMORY", mem_ctx, priority=20)
+        if rag_ctx:
+            ctx.add("WORKSPACE DOCUMENTATION", rag_ctx, priority=7)
         ctx.add("EXECUTION MODE", f"{mode_label} | Dangerous ops require confirmation.", priority=30)
 
         # Relevant search results
