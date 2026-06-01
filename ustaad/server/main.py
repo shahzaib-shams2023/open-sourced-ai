@@ -1,8 +1,11 @@
 import asyncio
 import json
 from typing import Dict, List
+import os
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
 app = FastAPI(title="Ustaad Dashboard Server")
@@ -75,3 +78,16 @@ async def receive_event(event: EventPayload):
         }
     )
     return {"status": "ok"}
+
+# Mount the Next.js exported static files
+static_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "ustaad-visualizer", "out")
+if os.path.exists(static_dir):
+    app.mount("/", StaticFiles(directory=static_dir, html=True), name="static")
+
+@app.exception_handler(404)
+async def custom_404_handler(request, __):
+    if os.path.exists(static_dir):
+        index_file = os.path.join(static_dir, "index.html")
+        if os.path.exists(index_file):
+            return FileResponse(index_file)
+    return {"error": "Dashboard not built. Run npm run build in ustaad-visualizer"}

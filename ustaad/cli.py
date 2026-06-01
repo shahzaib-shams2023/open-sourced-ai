@@ -1008,6 +1008,11 @@ def run_interactive():
         console.print()
         console.print(Rule("[bold green]⚡ USTAAD Engaged[/bold green]", style="green"))
         console.print()
+        
+        # Auto-launch visualizer for tasks
+        from ustaad.operator.dashboard_server import start_dashboard
+        start_dashboard(os.getcwd(), open_browser=True)
+        
         result = run_task(task_prompt, workspace=os.getcwd())
         console.print()
         console.print(Rule("[bold green]Result[/bold green]", style="green"))
@@ -1059,6 +1064,11 @@ def main(
     console.print()
     console.print(Rule("[bold green]⚡ USTAAD Engaged[/bold green]", style="green"))
     console.print()
+    
+    # Auto-launch visualizer for tasks
+    from ustaad.operator.dashboard_server import start_dashboard
+    start_dashboard(os.getcwd(), open_browser=True)
+    
     result = run_task(user_prompt, workspace=os.getcwd())
     console.print()
     console.print(Rule("[bold green]Result[/bold green]", style="green"))
