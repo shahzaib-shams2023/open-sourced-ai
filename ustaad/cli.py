@@ -817,25 +817,34 @@ def run_interactive():
                 else:
                     console.print(f"[yellow]Unknown kit subcommand: {args[0]}. Use init, check, or learn.[/yellow]")
                 continue
-            elif cmd == "/skill":
+            elif cmd in ["/skill", "/plugin"]:
                 if not args:
-                    console.print("[yellow]Usage: /skill install <git_url> [--local][/yellow]")
+                    console.print(f"[yellow]Usage: {cmd} install <git_url_or_shorthand> [--local][/yellow]")
                 elif args[0] == "install":
                     if len(args) < 2:
-                        console.print("[yellow]Please provide a git URL: /skill install <git_url>[/yellow]")
+                        console.print(f"[yellow]Please provide a repository: {cmd} install username/repo[/yellow]")
                     else:
                         repo_url = args[1]
+                        
+                        # Handle shorthands like username@repo or username/repo
+                        if not repo_url.startswith("http") and not repo_url.startswith("git@"):
+                            if "@" in repo_url:
+                                parts = repo_url.split("@")
+                                repo_url = f"https://github.com/{parts[0]}/{parts[1]}.git"
+                            elif "/" in repo_url:
+                                repo_url = f"https://github.com/{repo_url}.git"
+
                         is_global = "--local" not in args
                         from ustaad.core.skills import SkillManager
                         sm = SkillManager(os.getcwd())
                         try:
-                            with console.status(f"[cyan]Installing skill from {repo_url}...[/cyan]"):
+                            with console.status(f"[cyan]Installing from {repo_url}...[/cyan]"):
                                 repo_name = sm.install_from_git(repo_url, is_global=is_global)
                             console.print(f"[bold green]✓ Skill repository '{repo_name}' installed successfully![/bold green]")
                         except Exception as e:
                             console.print(f"[bold red]✗ {e}[/bold red]")
                 else:
-                    console.print(f"[yellow]Unknown skill subcommand: {args[0]}. Use install.[/yellow]")
+                    console.print(f"[yellow]Unknown subcommand: {args[0]}. Use install.[/yellow]")
                 continue
             elif cmd == "/save":
                 from ustaad.operator.session_manager import save_session
