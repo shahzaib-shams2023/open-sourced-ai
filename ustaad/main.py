@@ -178,11 +178,36 @@ def run_task(user_prompt: str, workspace: str = None) -> str:
     pipeline.phases.append(timer)
 
     # --- BUILD CONTEXT (trimmed per complexity) ---
+    from ustaad.core.skills import ContextBuilder, SkillManager
+    
+    context_builder = ContextBuilder(workspace)
+    agents_md = context_builder.load_agents_md()
+    ai_md = context_builder.load_ai_md()
+    
+    skill_manager = SkillManager(workspace)
+    skill_manager.index_skills()
+    active_skills = skill_manager.retrieve_skills(user_prompt)
+    
+    skills_ctx = ""
+    if active_skills:
+        skill_docs = []
+        for s in active_skills:
+            skill_docs.append(f"--- SKILL: {s['name']} ---\n{s['body']}")
+        skills_ctx = "\n\n".join(skill_docs)
+
     ctx = ContextManager(max_chars=route.context_budget)
     ctx.add("USER REQUEST", user_prompt, priority=1)
-    ctx.add("PLATFORM", f"OS: {platform.system()} | Shell: {'PowerShell/CMD' if sys.platform == 'win32' else 'bash'} | IMPORTANT: Use write_file tool to create files, NEVER shell commands.", priority=2)
-    ctx.add("WORKSPACE SCAN", scan_ctx, priority=5)
-    ctx.add("WORKSPACE PATH", workspace, priority=6)
+    
+    if agents_md:
+        ctx.add("AGENT INSTRUCTIONS (AGENTS.md)", agents_md, priority=2)
+    if ai_md:
+        ctx.add("PROJECT CONVENTIONS (AI.md)", ai_md, priority=3)
+    if skills_ctx:
+        ctx.add("ACTIVE SKILLS", skills_ctx, priority=4)
+        
+    ctx.add("PLATFORM", f"OS: {platform.system()} | Shell: {'PowerShell/CMD' if sys.platform == 'win32' else 'bash'} | IMPORTANT: Use write_file tool to create files, NEVER shell commands.", priority=5)
+    ctx.add("WORKSPACE SCAN", scan_ctx, priority=6)
+    ctx.add("WORKSPACE PATH", workspace, priority=7)
 
     # Only add heavy context for standard/complex tasks
     if route.complexity != TaskComplexity.TRIVIAL:
