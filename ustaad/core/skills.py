@@ -115,3 +115,30 @@ class SkillManager:
         # Sort by score descending
         scored_skills.sort(key=lambda x: x[0], reverse=True)
         return [s[1] for s in scored_skills[:top_k]]
+
+    def install_from_git(self, repo_url: str, is_global: bool = True) -> str:
+        """Clones a remote git repository of skills into the local or global registry."""
+        import subprocess
+        import shutil
+        
+        target_dir = self.global_skills_dir if is_global else self.skills_dir
+        os.makedirs(target_dir, exist_ok=True)
+        
+        repo_name = repo_url.rstrip('/').split('/')[-1]
+        if repo_name.endswith('.git'):
+            repo_name = repo_name[:-4]
+            
+        final_path = os.path.join(target_dir, repo_name)
+        if os.path.exists(final_path):
+            raise Exception(f"Skill repository '{repo_name}' is already installed at {final_path}")
+            
+        try:
+            subprocess.run(["git", "clone", repo_url, final_path], check=True, capture_output=True, text=True)
+            self.index_skills()
+            return repo_name
+        except subprocess.CalledProcessError as e:
+            # Cleanup if failed
+            if os.path.exists(final_path):
+                shutil.rmtree(final_path, ignore_errors=True)
+            raise Exception(f"Failed to clone repository: {e.stderr}")
+

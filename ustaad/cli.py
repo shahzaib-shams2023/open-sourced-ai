@@ -817,6 +817,26 @@ def run_interactive():
                 else:
                     console.print(f"[yellow]Unknown kit subcommand: {args[0]}. Use init, check, or learn.[/yellow]")
                 continue
+            elif cmd == "/skill":
+                if not args:
+                    console.print("[yellow]Usage: /skill install <git_url> [--local][/yellow]")
+                elif args[0] == "install":
+                    if len(args) < 2:
+                        console.print("[yellow]Please provide a git URL: /skill install <git_url>[/yellow]")
+                    else:
+                        repo_url = args[1]
+                        is_global = "--local" not in args
+                        from ustaad.core.skills import SkillManager
+                        sm = SkillManager(os.getcwd())
+                        try:
+                            with console.status(f"[cyan]Installing skill from {repo_url}...[/cyan]"):
+                                repo_name = sm.install_from_git(repo_url, is_global=is_global)
+                            console.print(f"[bold green]✓ Skill repository '{repo_name}' installed successfully![/bold green]")
+                        except Exception as e:
+                            console.print(f"[bold red]✗ {e}[/bold red]")
+                else:
+                    console.print(f"[yellow]Unknown skill subcommand: {args[0]}. Use install.[/yellow]")
+                continue
             elif cmd == "/save":
                 from ustaad.operator.session_manager import save_session
                 save_session(os.getcwd())
