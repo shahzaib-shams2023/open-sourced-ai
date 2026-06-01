@@ -821,32 +821,84 @@ def run_interactive():
                 continue
             elif cmd in ["/skill", "/plugin"]:
                 if not args:
-                    console.print(f"[yellow]Usage: {cmd} install <git_url_or_shorthand> [--local][/yellow]")
+                    console.print(f"[yellow]Usage:\n  {cmd} marketplace add <username/repo>\n  {cmd} install <marketplace>@<skill> [--local][/yellow]")
+                elif args[0] == "marketplace" and len(args) >= 3 and args[1] == "add":
+                    repo_url = args[2]
+                    if not repo_url.startswith("http") and not repo_url.startswith("git@"):
+                        repo_url = f"https://github.com/{repo_url}.git"
+                    
+                    import subprocess
+                    repo_name = repo_url.rstrip('/').split('/')[-1]
+                    if repo_name.endswith('.git'):
+                        repo_name = repo_name[:-4]
+                    
+                    marketplaces_dir = os.path.expanduser("~/.ustaad/marketplaces")
+                    os.makedirs(marketplaces_dir, exist_ok=True)
+                    final_path = os.path.join(marketplaces_dir, repo_name)
+                    
+                    try:
+                        with console.status(f"[cyan]Adding marketplace {repo_name}...[/cyan]"):
+                            if os.path.exists(final_path):
+                                console.print(f"[yellow]Marketplace {repo_name} already exists. Updating...[/yellow]")
+                                subprocess.run(["git", "-C", final_path, "pull"], check=True, capture_output=True, text=True)
+                            else:
+                                subprocess.run(["git", "clone", repo_url, final_path], check=True, capture_output=True, text=True)
+                        console.print(f"[bold green]✓ Marketplace '{repo_name}' added successfully![/bold green]")
+                    except Exception as e:
+                        console.print(f"[bold red]✗ Failed to add marketplace: {e}[/bold red]")
+
                 elif args[0] == "install":
                     if len(args) < 2:
-                        console.print(f"[yellow]Please provide a repository: {cmd} install username/repo[/yellow]")
+                        console.print(f"[yellow]Usage: {cmd} install <marketplace>@<skill>[/yellow]")
                     else:
-                        repo_url = args[1]
-                        
-                        # Handle shorthands like username@repo or username/repo
-                        if not repo_url.startswith("http") and not repo_url.startswith("git@"):
-                            if "@" in repo_url:
-                                parts = repo_url.split("@")
-                                repo_url = f"https://github.com/{parts[0]}/{parts[1]}.git"
-                            elif "/" in repo_url:
-                                repo_url = f"https://github.com/{repo_url}.git"
-
+                        target = args[1]
                         is_global = "--local" not in args
+                        
                         from ustaad.core.skills import SkillManager
                         sm = SkillManager(os.getcwd())
+                        
                         try:
-                            with console.status(f"[cyan]Installing from {repo_url}...[/cyan]"):
-                                repo_name = sm.install_from_git(repo_url, is_global=is_global)
-                            console.print(f"[bold green]✓ Skill repository '{repo_name}' installed successfully![/bold green]")
+                            if "@" in target and not target.startswith("http") and not target.startswith("git@"):
+                                # It's a marketplace install: marketplace_name@skill_name
+                                marketplace_name, skill_name = target.split("@", 1)
+                                marketplace_path = os.path.join(os.path.expanduser("~/.ustaad/marketplaces"), marketplace_name)
+                                
+                                if not os.path.exists(marketplace_path):
+                                    raise Exception(f"Marketplace '{marketplace_name}' not found. Run `{cmd} marketplace add <username/{marketplace_name}>` first.")
+                                
+                                # Find the skill in the marketplace
+                                skill_source = os.path.join(marketplace_path, skill_name)
+                                if not os.path.exists(skill_source):
+                                    # Sometimes skills are nested or just at root
+                                    raise Exception(f"Skill '{skill_name}' not found inside marketplace '{marketplace_name}'.")
+                                
+                                # Copy skill
+                                import shutil
+                                target_dir = sm.global_skills_dir if is_global else sm.skills_dir
+                                final_skill_path = os.path.join(target_dir, skill_name)
+                                
+                                if os.path.exists(final_skill_path):
+                                    console.print(f"[yellow]Skill '{skill_name}' is already installed. Overwriting...[/yellow]")
+                                    shutil.rmtree(final_skill_path)
+                                
+                                shutil.copytree(skill_source, final_skill_path)
+                                sm.index_skills()
+                                console.print(f"[bold green]✓ Skill '{skill_name}' installed successfully from marketplace '{marketplace_name}'![/bold green]")
+                                
+                            else:
+                                # Standard git clone install
+                                repo_url = target
+                                if not repo_url.startswith("http") and not repo_url.startswith("git@"):
+                                    if "/" in repo_url:
+                                        repo_url = f"https://github.com/{repo_url}.git"
+                                with console.status(f"[cyan]Installing from {repo_url}...[/cyan]"):
+                                    repo_name = sm.install_from_git(repo_url, is_global=is_global)
+                                console.print(f"[bold green]✓ Skill repository '{repo_name}' installed successfully![/bold green]")
+                                
                         except Exception as e:
                             console.print(f"[bold red]✗ {e}[/bold red]")
                 else:
-                    console.print(f"[yellow]Unknown subcommand: {args[0]}. Use install.[/yellow]")
+                    console.print(f"[yellow]Unknown subcommand: {args[0]}. Use install or marketplace.[/yellow]")
                 continue
             elif cmd == "/save":
                 from ustaad.operator.session_manager import save_session
