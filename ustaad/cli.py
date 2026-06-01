@@ -34,8 +34,9 @@ from rich.panel import Panel
 from rich.text import Text
 from rich.rule import Rule
 from rich.table import Table
-from ustaad.repl_ui import print_welcome_commands, print_mode, UstaadCompleter, get_statusbar_text
 
+app = typer.Typer(help="USTAAD CLI — Premium Terminal-Native Engineering Interface", add_completion=False)
+console = Console()
 from ustaad.main import run_task
 from ustaad.core.execution_mode import get_mode, set_mode
 from ustaad.core.scanner import WorkspaceScanner
@@ -580,6 +581,7 @@ def cmd_compact():
     console.print("[bold green]✓ Context history optimized. 0 tokens carried over.[/bold green]")
 
 
+from ustaad.repl_ui import print_welcome_commands, print_mode, UstaadCompleter, get_statusbar_text
 def run_interactive():
     from prompt_toolkit import HTML
     console.print(BANNER_PREMIUM)
