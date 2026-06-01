@@ -371,7 +371,7 @@ def run_task(user_prompt: str, workspace: str = None) -> str:
 
     send_progress_update(agent_phase_name, "Swarm agents executing roles...")
     with phase_spinner(agent_phase_name, f"{len(agents)} agent(s) working...") as timer:
-        crew = Crew(agents=agents, tasks=tasks, verbose=True)
+        crew = Crew(agents=agents, tasks=tasks, verbose=False)
         result = None
         for attempt in range(2):  # 1 retry on timeout
             try:
@@ -440,7 +440,7 @@ def run_task(user_prompt: str, workspace: str = None) -> str:
                         expected_output="[FIX] Applied fixes  [VERIFY] Fix verification",
                         agent=coder,
                     )
-                    fix_crew = Crew(agents=[coder], tasks=[fix_task], verbose=True)
+                    fix_crew = Crew(agents=[coder], tasks=[fix_task], verbose=False)
                     return str(fix_crew.kickoff())
 
                 repair_loop = RepairLoop(workspace, repair_fn, max_attempts=3)

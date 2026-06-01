@@ -35,7 +35,7 @@ reviewer = Agent(
     role="Senior Code Reviewer & Security Engineer",
     goal="Review all code for correctness, security, performance. Run tests. Block bad code.",
     backstory=REVIEWER_BACKSTORY,
-    verbose=True,
+    verbose=False,
     allow_delegation=False,
     tools=[
         read_file_tool, list_directory_tool, search_files_tool,

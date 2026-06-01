@@ -42,7 +42,7 @@ shell_agent = Agent(
 
     backstory=SHELL_BACKSTORY,
 
-    verbose=True,
+    verbose=False,
     allow_delegation=False,
     tools=[run_command_tool],
 

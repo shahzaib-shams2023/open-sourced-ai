@@ -210,5 +210,5 @@ def get_browser_agent(llm=None):
             browser_screenshot_tool
         ],
         llm=agent_llm,
-        verbose=True
+        verbose=False
     )

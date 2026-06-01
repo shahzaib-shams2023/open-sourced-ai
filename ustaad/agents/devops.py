@@ -30,7 +30,7 @@ devops_agent = Agent(
     role="Senior DevOps & Platform Engineer",
     goal="Handle infrastructure, Docker, CI/CD, deployment. Build reliable, automated infrastructure.",
     backstory=DEVOPS_BACKSTORY,
-    verbose=True,
+    verbose=False,
     allow_delegation=False,
     tools=[
         read_file_tool, write_file_tool, list_directory_tool,

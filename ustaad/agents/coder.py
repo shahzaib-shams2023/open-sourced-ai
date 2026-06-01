@@ -45,7 +45,7 @@ coder = Agent(
     role="Senior Software Engineer",
     goal="Write production-ready, clean, secure code following the plan. Read before writing. Reuse before creating.",
     backstory=CODER_BACKSTORY,
-    verbose=True,
+    verbose=False,
     allow_delegation=False,
     tools=[
         read_file_tool, write_file_tool, append_file_tool,

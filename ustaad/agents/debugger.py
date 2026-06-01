@@ -35,7 +35,7 @@ debugger = Agent(
     role="Senior Debugging & Root Cause Specialist",
     goal="Systematically identify root causes and apply minimal, targeted fixes. Never guess — always trace.",
     backstory=DEBUGGER_BACKSTORY,
-    verbose=True,
+    verbose=False,
     allow_delegation=False,
     tools=[
         read_file_tool, list_directory_tool, search_files_tool,
