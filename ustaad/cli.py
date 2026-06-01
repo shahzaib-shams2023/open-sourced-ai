@@ -140,13 +140,37 @@ def cmd_plugins():
     table.add_column("Plugin Name", style="green")
     table.add_column("Path / Source", style="dim")
     table.add_column("Exposed Tools", style="magenta")
-    
     for name, data in plugins.items():
         tools_str = ", ".join(t.name for t in data["tools"])
         table.add_row(
             name,
             os.path.basename(data["path"]),
             tools_str
+        )
+    console.print(table)
+
+def cmd_skills():
+    """List all available skills indexed by the SkillManager."""
+    from ustaad.core.skills import SkillManager
+    from rich.table import Table
+    
+    sm = SkillManager(os.getcwd())
+    sm.index_skills()
+    
+    if not sm.registry:
+        console.print("[yellow]No skills installed. Use /skill install <repo> to add some.[/yellow]")
+        return
+        
+    table = Table(title="Installed AI Skills", show_header=True, header_style="bold cyan")
+    table.add_column("Skill Name", style="green")
+    table.add_column("Location", style="dim")
+    table.add_column("Tags", style="magenta")
+    
+    for skill_id, data in sm.registry.items():
+        table.add_row(
+            data.get("name", skill_id),
+            "Global" if ".ustaad/skills" in data["dir"] and "Administrator" in data["dir"] else ("Built-in" if "core_skills" in data["dir"] else "Local"),
+            ", ".join(data.get("tags", []))
         )
     console.print(table)
 
@@ -708,6 +732,9 @@ def run_interactive():
             elif cmd == "/models":
                 cmd_models()
                 continue
+            elif cmd == "/skills":
+                cmd_skills()
+                continue
             elif cmd == "/plugins":
                 cmd_plugins()
                 continue
@@ -869,8 +896,19 @@ def run_interactive():
                                 # Find the skill in the marketplace
                                 skill_source = os.path.join(marketplace_path, skill_name)
                                 if not os.path.exists(skill_source):
-                                    # Sometimes skills are nested or just at root
-                                    raise Exception(f"Skill '{skill_name}' not found inside marketplace '{marketplace_name}'.")
+                                    # Fallback: check inside 'skills/' folder
+                                    skill_source = os.path.join(marketplace_path, "skills", skill_name)
+                                    
+                                if not os.path.exists(skill_source):
+                                    # List available skills
+                                    available = []
+                                    if os.path.exists(os.path.join(marketplace_path, "skills")):
+                                        available = [d for d in os.listdir(os.path.join(marketplace_path, "skills")) if os.path.isdir(os.path.join(marketplace_path, "skills", d))]
+                                    else:
+                                        available = [d for d in os.listdir(marketplace_path) if os.path.isdir(os.path.join(marketplace_path, d)) and not d.startswith(".")]
+                                    
+                                    avail_str = ", ".join(available) if available else "No skills found."
+                                    raise Exception(f"Skill '{skill_name}' not found inside marketplace '{marketplace_name}'.\n[dim]Available skills in this marketplace: {avail_str}[/dim]")
                                 
                                 # Copy skill
                                 import shutil
