@@ -113,7 +113,54 @@ async def handle_client(websocket):
                         response_payload = {"status": "dropped", "context": ACTIVE_CONTEXT_FILES}
                     else:
                         response_payload = {"context": ACTIVE_CONTEXT_FILES}
-                        
+
+                elif action == "get_status":
+                    # Dashboard telemetry: system health status
+                    import socket as _sock
+                    ollama_up = False
+                    try:
+                        s = _sock.socket(_sock.AF_INET, _sock.SOCK_STREAM)
+                        s.settimeout(1.0)
+                        s.connect(("127.0.0.1", 11434))
+                        s.close()
+                        ollama_up = True
+                    except Exception:
+                        pass
+                    kit_ok = os.path.isdir(os.path.join(os.getcwd(), ".ustaad-kit"))
+                    try:
+                        from ustaad.core.execution_mode import get_mode as _gm
+                        _m = _gm()
+                        mode_str = "AUTONOMOUS" if _m.autonomous else ("SAFE" if _m.safe else "SEMI-AUTO")
+                    except Exception:
+                        mode_str = "UNKNOWN"
+                    response_payload = {
+                        "ollama": ollama_up,
+                        "websocket": True,
+                        "kit_installed": kit_ok,
+                        "has_docs": os.path.isdir(os.path.join(os.getcwd(), "docs")),
+                        "has_git": os.path.isdir(os.path.join(os.getcwd(), ".git")),
+                        "mode": mode_str,
+                        "workspace": os.path.basename(os.getcwd()),
+                    }
+
+                elif action == "get_skills":
+                    # Dashboard telemetry: dynamic skills list
+                    plugins_dir = os.path.join(os.getcwd(), ".ustaad", "plugins")
+                    skills = []
+                    if os.path.isdir(plugins_dir):
+                        for f in os.listdir(plugins_dir):
+                            if f.endswith(".py") and not f.startswith("__"):
+                                skills.append({"name": f.replace(".py", ""), "file": f})
+                    response_payload = {"skills": skills, "count": len(skills)}
+
+                elif action == "security_scan":
+                    # Dashboard telemetry: run security audit
+                    try:
+                        from ustaad.operator.security_scanner import run_security_scan
+                        response_payload = run_security_scan(os.getcwd())
+                    except Exception as scan_err:
+                        response_payload = {"score": -1, "findings": [], "error": str(scan_err)}
+
                 else:
                     response_payload = {"error": f"Unknown action: {action}"}
 

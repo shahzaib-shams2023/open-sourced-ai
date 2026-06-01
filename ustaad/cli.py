@@ -130,6 +130,10 @@ class UstaadCompleter(Completer):
                 "/voice": "Transcribe .wav prompt & speak response",
                 "/vscode": "Manage background VS Code WebSocket server",
                 "/doc": "Query workspace documentation semantically via RAG",
+                "/kit": "Operator Kit: init, check, learn",
+                "/save": "Save active session context to disk",
+                "/load": "Restore saved session context",
+                "/dashboard": "Launch premium desktop status dashboard",
                 "/history": "View interactive prompt history",
                 "/help": "Show list of commands & shortcuts",
                 "/exit": "Exit the USTAAD session",
@@ -244,6 +248,14 @@ def print_welcome_commands():
     table.add_row("/reload", "Plugins", "Reload all dynamic plugins & tools")
     table.add_row("/voice <path>", "Plugins", "Transcribe audio prompt & speak response")
     table.add_row("/vscode <action>", "Plugins", "Manage background VS Code WebSocket server")
+    
+    table.add_row("/kit init", "Operator Kit", "Bootstrap rules, hooks & skills in workspace")
+    table.add_row("/kit check", "Operator Kit", "Run workspace security & readiness audit")
+    table.add_row("/kit learn <n> \"<d>\"", "Operator Kit", "Synthesize a new reusable AI skill")
+    table.add_row("/save", "Operator Kit", "Save active session context to disk")
+    table.add_row("/load", "Operator Kit", "Restore saved session context")
+    table.add_row("/dashboard", "Operator Kit", "Launch premium desktop status dashboard")
+    
     table.add_row("/clear", "Utility", "Clear screen")
     table.add_row("/help", "Utility", "Show this interactive command map")
     table.add_row("/exit", "Utility", "Close active USTAAD session")
@@ -441,6 +453,22 @@ def cmd_search(query: str):
 def cli_doc(query: str):
     """Query workspace documentation semantically via RAG."""
     cmd_doc(query)
+
+
+@app.command("dashboard")
+def cli_dashboard():
+    """Launch the premium Operator Kit desktop dashboard."""
+    from ustaad.operator.dashboard_server import start_dashboard
+    start_dashboard(os.getcwd())
+    # Keep main thread alive while dashboard runs
+    import time
+    try:
+        console.print("[dim]Dashboard running at http://localhost:8000 — Press Ctrl+C to stop.[/dim]")
+        while True:
+            time.sleep(1)
+    except KeyboardInterrupt:
+        from ustaad.operator.dashboard_server import stop_dashboard
+        stop_dashboard()
 
 
 @app.command("test")
@@ -900,6 +928,39 @@ def run_interactive():
                     console.print()
                 except Exception as e:
                     console.print(f"[red]Error loading history: {e}[/red]")
+                continue
+            elif cmd == "/kit":
+                if not args:
+                    console.print("[yellow]Usage: /kit init | /kit check | /kit learn <name> \"<description>\"[/yellow]")
+                elif args[0] == "init":
+                    from ustaad.operator.kit_builder import init_operator_kit
+                    init_operator_kit(os.getcwd())
+                elif args[0] == "check":
+                    from ustaad.operator.security_scanner import run_security_scan, print_security_report
+                    results = run_security_scan(os.getcwd())
+                    print_security_report(results)
+                elif args[0] == "learn":
+                    if len(args) < 3:
+                        console.print('[yellow]Usage: /kit learn <skill_name> "<description>"[/yellow]')
+                    else:
+                        skill_name = args[1]
+                        description = " ".join(args[2:]).strip('"\'')
+                        from ustaad.operator.skill_learner import learn_reusable_skill
+                        learn_reusable_skill(skill_name, description, os.getcwd())
+                else:
+                    console.print(f"[yellow]Unknown kit subcommand: {args[0]}. Use init, check, or learn.[/yellow]")
+                continue
+            elif cmd == "/save":
+                from ustaad.operator.session_manager import save_session
+                save_session(os.getcwd())
+                continue
+            elif cmd == "/load":
+                from ustaad.operator.session_manager import load_session
+                load_session(os.getcwd())
+                continue
+            elif cmd == "/dashboard":
+                from ustaad.operator.dashboard_server import start_dashboard
+                start_dashboard(os.getcwd())
                 continue
             elif cmd == "/help":
                 print_welcome_commands()

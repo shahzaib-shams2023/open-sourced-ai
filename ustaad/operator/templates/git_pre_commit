@@ -1,0 +1,30 @@
+#!/bin/sh
+# USTAAD Secure Pre-Commit Hook
+# Audits staged code for secrets and security risks before allowing the commit.
+
+echo "🔍 [USTAAD] Running staged files safety audit..."
+
+# Check if ustaad is installed
+if ! command -v ustaad >/dev/null 2>&1; then
+    # Fallback to local python module check
+    if [ -f "ustaad/cli.py" ]; then
+        python ustaad/cli.py doc --help >/dev/null 2>&1 || {
+            echo "   [WARNING] Ustaad not active or dependencies missing. Skipping commit audit."
+            exit 0
+        }
+        # Run local security check
+        python -c "from ustaad.operator.security_scanner import run_git_pre_commit; import sys; sys.exit(run_git_pre_commit())"
+    else
+        echo "   [INFO] USTAAD is not active. Skipping commit audit."
+        exit 0
+    fi
+else
+    # Run CLI command
+    ustaad kit check --git-staged || {
+        echo "❌ [USTAAD] Commit blocked due to security findings. Please fix the issues or commit with --no-verify."
+        exit 1
+    }
+fi
+
+echo "✅ [USTAAD] Safety audit passed. Proceeding with commit."
+exit 0

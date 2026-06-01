@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>USTAAD — Operator Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        /* ============================================ */
+        /* Design System — HSL Tokyo Night Palette      */
+        /* ============================================ */
+        :root {
+            --bg-base: hsl(230, 25%, 9%);
+            --bg-surface: hsl(230, 20%, 12%);
+            --bg-elevated: hsl(230, 18%, 16%);
+            --bg-glass: hsla(230, 20%, 14%, 0.55);
+            --border-glass: hsla(220, 30%, 40%, 0.18);
+            --border-glow: hsla(170, 95%, 50%, 0.12);
+
+            --text-primary: hsl(220, 30%, 92%);
+            --text-secondary: hsl(225, 15%, 60%);
+            --text-muted: hsl(225, 10%, 42%);
+
+            --accent-cyan: hsl(170, 95%, 50%);
+            --accent-orange: hsl(25, 100%, 70%);
+            --accent-purple: hsl(270, 70%, 65%);
+            --accent-red: hsl(0, 80%, 60%);
+            --accent-green: hsl(145, 75%, 55%);
+            --accent-blue: hsl(215, 80%, 60%);
+
+            --radius-sm: 8px;
+            --radius-md: 14px;
+            --radius-lg: 20px;
+
+            --shadow-soft: 0 4px 30px hsla(0, 0%, 0%, 0.25);
+            --shadow-glow-cyan: 0 0 25px hsla(170, 95%, 50%, 0.08);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-base);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Subtle animated background grid */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background:
+                radial-gradient(ellipse 600px 400px at 15% 20%, hsla(170, 90%, 50%, 0.04), transparent),
+                radial-gradient(ellipse 500px 350px at 85% 70%, hsla(270, 70%, 60%, 0.04), transparent);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* ============================================ */
+        /* Layout                                        */
+        /* ============================================ */
+        .app { position: relative; z-index: 1; }
+
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 20px 32px;
+            border-bottom: 1px solid var(--border-glass);
+            backdrop-filter: blur(20px);
+            background: var(--bg-glass);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .logo-icon {
+            width: 38px;
+            height: 38px;
+            background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            font-weight: 800;
+            color: var(--bg-base);
+            box-shadow: var(--shadow-glow-cyan);
+        }
+
+        .header-title {
+            font-size: 20px;
+            font-weight: 700;
+            letter-spacing: -0.3px;
+        }
+
+        .header-title span {
+            color: var(--accent-cyan);
+        }
+
+        .header-workspace {
+            font-size: 13px;
+            color: var(--text-muted);
+            font-weight: 400;
+            padding: 5px 14px;
+            border: 1px solid var(--border-glass);
+            border-radius: 100px;
+            background: var(--bg-surface);
+        }
+
+        .main {
+            padding: 28px 32px 60px;
+            max-width: 1340px;
+            margin: 0 auto;
+        }
+
+        /* ============================================ */
+        /* Dashboard Grid                               */
+        /* ============================================ */
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .grid-wide {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .grid-triple {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        /* ============================================ */
+        /* Glass Card                                    */
+        /* ============================================ */
+        .card {
+            background: var(--bg-glass);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--border-glass);
+            border-radius: var(--radius-md);
+            padding: 22px 24px;
+            box-shadow: var(--shadow-soft);
+            transition: transform 0.22s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+            border-color: var(--border-glow);
+            box-shadow: var(--shadow-soft), var(--shadow-glow-cyan);
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+        }
+
+        .card-title {
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-secondary);
+        }
+
+        .card-icon {
+            font-size: 18px;
+        }
+
+        .card-value {
+            font-size: 28px;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            line-height: 1;
+            margin-bottom: 6px;
+        }
+
+        .card-subtitle {
+            font-size: 12px;
+            color: var(--text-muted);
+            font-weight: 400;
+        }
+
+        /* ============================================ */
+        /* Status Badges                                 */
+        /* ============================================ */
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 12px;
+            border-radius: 100px;
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 0.3px;
+        }
+
+        .badge-ok {
+            background: hsla(145, 75%, 55%, 0.12);
+            color: var(--accent-green);
+            border: 1px solid hsla(145, 75%, 55%, 0.2);
+        }
+
+        .badge-warn {
+            background: hsla(25, 100%, 70%, 0.1);
+            color: var(--accent-orange);
+            border: 1px solid hsla(25, 100%, 70%, 0.2);
+        }
+
+        .badge-err {
+            background: hsla(0, 80%, 60%, 0.1);
+            color: var(--accent-red);
+            border: 1px solid hsla(0, 80%, 60%, 0.2);
+        }
+
+        .dot {
+            width: 7px; height: 7px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+
+        .dot-green { background: var(--accent-green); box-shadow: 0 0 6px var(--accent-green); }
+        .dot-red { background: var(--accent-red); box-shadow: 0 0 6px var(--accent-red); }
+        .dot-orange { background: var(--accent-orange); box-shadow: 0 0 6px var(--accent-orange); }
+
+        /* ============================================ */
+        /* Checklist Items                               */
+        /* ============================================ */
+        .checklist { list-style: none; margin-top: 10px; }
+        .checklist li {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 9px 0;
+            border-bottom: 1px solid hsla(230, 20%, 30%, 0.25);
+            font-size: 13px;
+            font-weight: 400;
+            color: var(--text-secondary);
+        }
+        .checklist li:last-child { border-bottom: none; }
+        .check-icon { font-size: 15px; }
+
+        /* ============================================ */
+        /* Skills Table                                  */
+        /* ============================================ */
+        .skill-table { width: 100%; margin-top: 10px; }
+        .skill-table th {
+            text-align: left;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            color: var(--text-muted);
+            padding: 8px 0;
+            border-bottom: 1px solid var(--border-glass);
+        }
+        .skill-table td {
+            padding: 10px 0;
+            font-size: 13px;
+            border-bottom: 1px solid hsla(230, 20%, 20%, 0.3);
+            color: var(--text-secondary);
+        }
+        .skill-table td:first-child {
+            color: var(--accent-cyan);
+            font-weight: 600;
+        }
+        .skill-table tr:last-child td { border-bottom: none; }
+
+        /* ============================================ */
+        /* Findings (Security)                           */
+        /* ============================================ */
+        .finding-row {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 10px 0;
+            border-bottom: 1px solid hsla(230, 20%, 20%, 0.3);
+            font-size: 13px;
+        }
+        .finding-row:last-child { border-bottom: none; }
+        .finding-file { color: var(--accent-green); font-weight: 500; min-width: 140px; }
+        .finding-type { color: var(--accent-orange); flex: 1; }
+        .finding-snippet { color: var(--text-muted); font-family: monospace; font-size: 11px; max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+        /* ============================================ */
+        /* Section title                                 */
+        /* ============================================ */
+        .section-title {
+            font-size: 15px;
+            font-weight: 700;
+            margin-bottom: 16px;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* ============================================ */
+        /* Score Ring                                     */
+        /* ============================================ */
+        .score-ring {
+            width: 90px;
+            height: 90px;
+            margin: 0 auto 12px;
+        }
+        .score-ring svg { width: 100%; height: 100%; }
+        .score-ring-bg { fill: none; stroke: var(--bg-elevated); stroke-width: 6; }
+        .score-ring-fill { fill: none; stroke-width: 6; stroke-linecap: round; transition: stroke-dashoffset 1s ease, stroke 0.5s ease; }
+        .score-label { font-size: 22px; font-weight: 800; fill: var(--text-primary); text-anchor: middle; dominant-baseline: central; }
+
+        /* ============================================ */
+        /* Empty State                                   */
+        /* ============================================ */
+        .empty-state {
+            text-align: center;
+            padding: 30px 16px;
+            color: var(--text-muted);
+            font-size: 13px;
+        }
+        .empty-state .empty-icon { font-size: 28px; margin-bottom: 8px; }
+
+        /* ============================================ */
+        /* Loading pulse                                 */
+        /* ============================================ */
+        @keyframes pulse { 0%, 100% { opacity: 0.4; } 50% { opacity: 1; } }
+        .loading { animation: pulse 1.5s ease-in-out infinite; color: var(--text-muted); font-size: 13px; }
+
+        /* ============================================ */
+        /* Responsive                                    */
+        /* ============================================ */
+        @media (max-width: 900px) {
+            .grid { grid-template-columns: repeat(2, 1fr); }
+            .grid-wide, .grid-triple { grid-template-columns: 1fr; }
+            .main { padding: 20px 16px; }
+        }
+    </style>
+</head>
+<body>
+<div class="app">
+
+    <!-- ========== Header ========== -->
+    <header class="header">
+        <div class="header-left">
+            <div class="logo-icon">U</div>
+            <div class="header-title"><span>USTAAD</span> Operator Dashboard</div>
+        </div>
+        <div class="header-workspace" id="header-workspace">Loading workspace...</div>
+    </header>
+
+    <!-- ========== Main Content ========== -->
+    <main class="main">
+
+        <!-- Row 1: KPI Cards -->
+        <div class="grid" id="kpi-grid">
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">Ollama LLM</div>
+                    <div class="card-icon">🤖</div>
+                </div>
+                <div id="kpi-ollama"><span class="loading">Checking...</span></div>
+            </div>
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">WebSocket Server</div>
+                    <div class="card-icon">🔌</div>
+                </div>
+                <div id="kpi-ws"><span class="loading">Checking...</span></div>
+            </div>
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">Operator Kit</div>
+                    <div class="card-icon">🧰</div>
+                </div>
+                <div id="kpi-kit"><span class="loading">Checking...</span></div>
+            </div>
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">Execution Mode</div>
+                    <div class="card-icon">🛡️</div>
+                </div>
+                <div id="kpi-mode"><span class="loading">Checking...</span></div>
+            </div>
+        </div>
+
+        <!-- Row 2: Security Score + Project Readiness -->
+        <div class="grid-wide">
+            <!-- Security Score -->
+            <div class="card">
+                <div class="section-title">🛡️ Security Health</div>
+                <div style="display:flex; align-items:center; gap:24px;">
+                    <div class="score-ring" id="security-ring">
+                        <svg viewBox="0 0 36 36">
+                            <circle class="score-ring-bg" cx="18" cy="18" r="15.9"/>
+                            <circle class="score-ring-fill" id="ring-fill" cx="18" cy="18" r="15.9"
+                                stroke="var(--accent-green)"
+                                stroke-dasharray="100" stroke-dashoffset="100"
+                                transform="rotate(-90 18 18)"/>
+                            <text class="score-label" x="18" y="18" id="ring-label">—</text>
+                        </svg>
+                    </div>
+                    <div id="security-findings" style="flex:1;">
+                        <span class="loading">Scanning workspace...</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Project Readiness Checklist -->
+            <div class="card">
+                <div class="section-title">📋 Project Readiness</div>
+                <ul class="checklist" id="readiness-list">
+                    <li><span class="loading">Loading checklist...</span></li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Row 3: Skills + Session Context -->
+        <div class="grid-wide">
+            <!-- Dynamic Skills -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="section-title">⚡ Dynamic Skills & Plugins</div>
+                    <span class="badge badge-ok" id="skill-count-badge">0 loaded</span>
+                </div>
+                <div id="skills-container">
+                    <span class="loading">Loading skills...</span>
+                </div>
+            </div>
+
+            <!-- Session Context -->
+            <div class="card">
+                <div class="section-title">💾 Saved Session Context</div>
+                <div id="session-container">
+                    <span class="loading">Loading session...</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Row 4: Workspace Scan -->
+        <div class="card" style="margin-bottom: 24px;">
+            <div class="section-title">🔬 Workspace Intelligence Scan</div>
+            <div class="grid" id="scan-grid" style="margin-bottom:0;">
+                <span class="loading">Scanning workspace...</span>
+            </div>
+        </div>
+
+    </main>
+</div>
+
+<script>
+    // ============================================
+    // Data Fetching
+    // ============================================
+    const API_BASE = window.location.origin;
+
+    async function fetchJSON(endpoint) {
+        try {
+            const res = await fetch(API_BASE + endpoint);
+            return await res.json();
+        } catch (e) {
+            return null;
+        }
+    }
+
+    // ============================================
+    // Renderers
+    // ============================================
+
+    function renderKPIBadge(containerId, isOnline, labelOn, labelOff) {
+        const el = document.getElementById(containerId);
+        if (isOnline) {
+            el.innerHTML = `<div class="card-value" style="color:var(--accent-green);">${labelOn}</div>
+                            <span class="badge badge-ok"><span class="dot dot-green"></span> Connected</span>`;
+        } else {
+            el.innerHTML = `<div class="card-value" style="color:var(--accent-red);">${labelOff}</div>
+                            <span class="badge badge-err"><span class="dot dot-red"></span> Offline</span>`;
+        }
+    }
+
+    function renderStatus(data) {
+        if (!data) return;
+        document.getElementById('header-workspace').textContent = '📁 ' + (data.workspace || 'unknown');
+        renderKPIBadge('kpi-ollama', data.ollama, 'Online', 'Offline');
+        renderKPIBadge('kpi-ws', data.websocket, 'Active', 'Inactive');
+
+        const kitEl = document.getElementById('kpi-kit');
+        if (data.kit_installed) {
+            kitEl.innerHTML = `<div class="card-value" style="color:var(--accent-green);">Installed</div>
+                               <span class="badge badge-ok"><span class="dot dot-green"></span> Ready</span>`;
+        } else {
+            kitEl.innerHTML = `<div class="card-value" style="color:var(--accent-orange);">Missing</div>
+                               <span class="badge badge-warn"><span class="dot dot-orange"></span> Run /kit init</span>`;
+        }
+
+        const modeEl = document.getElementById('kpi-mode');
+        const modeColor = data.mode === 'AUTONOMOUS' ? 'var(--accent-red)' : (data.mode === 'SAFE' ? 'var(--accent-green)' : 'var(--accent-orange)');
+        modeEl.innerHTML = `<div class="card-value" style="color:${modeColor};">${data.mode || '—'}</div>
+                            <div class="card-subtitle">Agent execution policy</div>`;
+    }
+
+    function renderSecurity(data) {
+        if (!data) return;
+        const score = data.score != null ? Math.max(0, data.score) : 0;
+        const circumference = 100;
+        const offset = circumference - (score / 100) * circumference;
+        const color = score >= 90 ? 'var(--accent-green)' : (score >= 70 ? 'var(--accent-orange)' : 'var(--accent-red)');
+
+        document.getElementById('ring-fill').setAttribute('stroke-dashoffset', offset);
+        document.getElementById('ring-fill').setAttribute('stroke', color);
+        document.getElementById('ring-label').textContent = score;
+
+        const findingsEl = document.getElementById('security-findings');
+        const findings = data.findings || [];
+        if (findings.length === 0) {
+            findingsEl.innerHTML = `<div class="empty-state" style="text-align:left;padding:0;">
+                <span style="color:var(--accent-green);font-weight:600;">✓ All clear!</span><br/>
+                <span style="color:var(--text-muted);">No secrets or risky scripts detected.</span>
+            </div>`;
+        } else {
+            let html = '';
+            findings.slice(0, 5).forEach(f => {
+                html += `<div class="finding-row">
+                    <span class="finding-file">${f.file}:${f.line}</span>
+                    <span class="finding-type">${f.type}</span>
+                    <span class="finding-snippet">${escapeHtml(f.content || '')}</span>
+                </div>`;
+            });
+            if (findings.length > 5) {
+                html += `<div style="color:var(--text-muted);font-size:12px;padding-top:8px;">+${findings.length - 5} more findings...</div>`;
+            }
+            findingsEl.innerHTML = html;
+        }
+    }
+
+    function renderReadiness(statusData, scanData) {
+        const items = [
+            { label: 'Git Repository Initialized', ok: statusData?.has_git },
+            { label: 'Ollama LLM Server Online', ok: statusData?.ollama },
+            { label: 'Operator Kit Installed', ok: statusData?.kit_installed },
+            { label: 'Documentation Folder (docs/)', ok: statusData?.has_docs },
+            { label: 'Test Framework Detected', ok: (scanData?.test_frameworks?.length || 0) > 0 },
+            { label: 'Linter Configured', ok: (scanData?.linters?.length || 0) > 0 },
+        ];
+
+        const listEl = document.getElementById('readiness-list');
+        listEl.innerHTML = items.map(item => {
+            const icon = item.ok ? '✅' : '⬜';
+            const color = item.ok ? 'var(--text-primary)' : 'var(--text-muted)';
+            return `<li><span class="check-icon">${icon}</span><span style="color:${color}">${item.label}</span></li>`;
+        }).join('');
+    }
+
+    function renderSkills(data) {
+        if (!data) return;
+        const container = document.getElementById('skills-container');
+        const badge = document.getElementById('skill-count-badge');
+        badge.textContent = `${data.count} loaded`;
+
+        if (data.count === 0) {
+            container.innerHTML = `<div class="empty-state">
+                <div class="empty-icon">⚡</div>
+                No dynamic skills loaded.<br/>Use <code>/kit learn &lt;name&gt; "&lt;description&gt;"</code> to synthesize one.
+            </div>`;
+            return;
+        }
+
+        let html = '<table class="skill-table"><thead><tr><th>Skill Name</th><th>File</th><th>Size</th></tr></thead><tbody>';
+        data.skills.forEach(s => {
+            html += `<tr><td>${s.name}</td><td>${s.file}</td><td>${s.size_kb} KB</td></tr>`;
+        });
+        html += '</tbody></table>';
+        container.innerHTML = html;
+    }
+
+    function renderSession(data) {
+        if (!data) return;
+        const container = document.getElementById('session-container');
+        const files = data.active_files || [];
+        const stats = data.stats || {};
+
+        if (files.length === 0 && Object.keys(stats).length === 0) {
+            container.innerHTML = `<div class="empty-state">
+                <div class="empty-icon">💾</div>
+                No saved session found.<br/>Use <code>/save</code> in the REPL to persist your context.
+            </div>`;
+            return;
+        }
+
+        let html = '';
+        if (files.length > 0) {
+            html += `<div style="margin-bottom:12px;"><span style="color:var(--accent-cyan);font-weight:600;">${files.length}</span> <span style="color:var(--text-muted);">context file(s) saved</span></div>`;
+            html += '<ul class="checklist">';
+            files.forEach(f => {
+                html += `<li><span class="check-icon">📄</span>${f}</li>`;
+            });
+            html += '</ul>';
+        }
+        if (stats.commands || stats.tasks) {
+            html += `<div style="margin-top:12px;display:flex;gap:20px;">
+                <div><span style="color:var(--accent-orange);font-weight:700;font-size:18px;">${stats.commands || 0}</span><br/><span style="color:var(--text-muted);font-size:11px;">Commands</span></div>
+                <div><span style="color:var(--accent-purple);font-weight:700;font-size:18px;">${stats.tasks || 0}</span><br/><span style="color:var(--text-muted);font-size:11px;">AI Tasks</span></div>
+                <div><span style="color:var(--accent-blue);font-weight:700;font-size:18px;">${stats.files_viewed || 0}</span><br/><span style="color:var(--text-muted);font-size:11px;">Files Viewed</span></div>
+            </div>`;
+        }
+        container.innerHTML = html;
+    }
+
+    function renderScan(data) {
+        if (!data || data.error) {
+            document.getElementById('scan-grid').innerHTML = `<div class="empty-state">Scan unavailable.</div>`;
+            return;
+        }
+
+        const cards = [
+            { title: 'Languages', icon: '💻', value: (data.languages || []).join(', ') || 'None' },
+            { title: 'Frameworks', icon: '📦', value: (data.frameworks || []).join(', ') || 'None' },
+            { title: 'Total Files', icon: '📁', value: data.file_count || 0 },
+            { title: 'Test Frameworks', icon: '🧪', value: (data.test_frameworks || []).join(', ') || 'None' },
+        ];
+
+        document.getElementById('scan-grid').innerHTML = cards.map(c => `
+            <div style="text-align:center;">
+                <div style="font-size:20px;margin-bottom:6px;">${c.icon}</div>
+                <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:4px;">${c.title}</div>
+                <div style="font-size:15px;font-weight:600;color:var(--text-primary);">${c.value}</div>
+            </div>
+        `).join('');
+    }
+
+    function escapeHtml(str) {
+        const div = document.createElement('div');
+        div.appendChild(document.createTextNode(str));
+        return div.innerHTML;
+    }
+
+    // ============================================
+    // Boot — Fetch all data and render
+    // ============================================
+    async function boot() {
+        const [status, security, skills, session, scan] = await Promise.all([
+            fetchJSON('/api/status'),
+            fetchJSON('/api/security'),
+            fetchJSON('/api/skills'),
+            fetchJSON('/api/session'),
+            fetchJSON('/api/scan'),
+        ]);
+
+        renderStatus(status);
+        renderSecurity(security);
+        renderSkills(skills);
+        renderSession(session);
+        renderScan(scan);
+        renderReadiness(status, scan);
+    }
+
+    // Initial render
+    boot();
+
+    // Auto-refresh every 15 seconds
+    setInterval(boot, 15000);
+</script>
+</body>
+</html>
