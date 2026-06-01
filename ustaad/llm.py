@@ -9,7 +9,6 @@ import os
 import yaml
 from crewai import LLM
 from pathlib import Path
-from langchain_core.callbacks import StreamingStdOutCallbackHandler
 
 
 _config_cache = None
@@ -54,7 +53,6 @@ def load_model(model_name: str) -> LLM:
         base_url=os.environ.get("OLLAMA_BASE_URL", "http://localhost:11434"),
         timeout=900,           # 900s per request (prevents timeouts during large generations)
         max_retries=2,         # retry on timeout/connection errors
-        callbacks=[StreamingStdOutCallbackHandler()]
     )
     _llm_cache[model_name] = llm
     return llm

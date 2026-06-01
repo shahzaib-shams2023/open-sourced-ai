@@ -187,6 +187,18 @@ def phase_header(phase: str, detail: str = "", timer: PhaseTimer = None):
         for line in detail.strip().split("\n"):
             console.print(f"[dim]   {line}[/dim]")
 
+ACTIVE_SPINNER: Optional[Progress] = None
+
+@contextmanager
+def suspend_spinner():
+    """Temporarily stops the active spinner to allow terminal input."""
+    global ACTIVE_SPINNER
+    if ACTIVE_SPINNER:
+        ACTIVE_SPINNER.stop()
+        yield
+        ACTIVE_SPINNER.start()
+    else:
+        yield
 
 @contextmanager
 def phase_spinner(phase: str, detail: str = ""):
@@ -209,6 +221,9 @@ def phase_spinner(phase: str, detail: str = ""):
         transient=True,
     )
 
+    global ACTIVE_SPINNER
+    ACTIVE_SPINNER = spinner
+
     with spinner:
         task = spinner.add_task(detail, total=None)
         try:
@@ -216,6 +231,7 @@ def phase_spinner(phase: str, detail: str = ""):
         finally:
             timer.end_time = time.time()
             timer.status = "done"
+            ACTIVE_SPINNER = None
 
     # Print completed header
     console.print(

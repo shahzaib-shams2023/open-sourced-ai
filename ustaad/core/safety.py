@@ -174,8 +174,11 @@ class SafetyGate:
             syntax = Syntax(diff, "diff", theme="monokai", line_numbers=True)
             console.print(Panel(syntax, title="[bold blue]Proposed Changes[/bold blue]", border_style="blue"))
 
+        from ustaad.core.progress import suspend_spinner
+        
         try:
-            response = input("  Proceed? [y/N/always] ").strip().lower()
+            with suspend_spinner():
+                response = input("  Proceed? [y/N/always] ").strip().lower()
         except (KeyboardInterrupt, EOFError):
             console.print("[red]Aborted.[/red]")
             return False
