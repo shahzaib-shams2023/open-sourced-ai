@@ -61,7 +61,7 @@ def load_model(model_name: str) -> LLM:
 def load_model_for_role_and_complexity(role: str, complexity: str = None) -> LLM:
     """
     Load the model assigned to a specific agent role and task complexity from routing.yaml.
-    Falls back to role-level default, then to qwen3:8b.
+    Falls back to role-level default, then to cieloforge/qwen2.5-coder-7b-instruct-spec:latest.
     """
     config = _load_config()
     role_config = config.get(role, {})
@@ -72,9 +72,9 @@ def load_model_for_role_and_complexity(role: str, complexity: str = None) -> LLM
         elif "model" in role_config:
             model_name = role_config["model"]
         else:
-            model_name = role_config.get("default", "qwen3:8b")
+            model_name = role_config.get("default", "cieloforge/qwen2.5-coder-7b-instruct-spec:latest")
     else:
-        model_name = role_config or "qwen3:8b"
+        model_name = role_config or "cieloforge/qwen2.5-coder-7b-instruct-spec:latest"
 
     return load_model(model_name)
 
@@ -82,7 +82,7 @@ def load_model_for_role_and_complexity(role: str, complexity: str = None) -> LLM
 def load_model_for_role(role: str) -> LLM:
     """
     Load the model assigned to a specific agent role from routing.yaml.
-    Falls back to qwen3:8b if not configured.
+    Falls back to cieloforge/qwen2.5-coder-7b-instruct-spec:latest if not configured.
     """
     return load_model_for_role_and_complexity(role, None)
 

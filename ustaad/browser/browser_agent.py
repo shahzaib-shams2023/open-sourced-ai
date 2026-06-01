@@ -193,7 +193,7 @@ def get_browser_agent(llm=None):
     from crewai import Agent
     from langchain_ollama import ChatOllama
     
-    agent_llm = llm or ChatOllama(model="qwen3:8b", base_url="http://localhost:11434")
+    agent_llm = llm or ChatOllama(model="cieloforge/qwen2.5-coder-7b-instruct-spec:latest", base_url="http://localhost:11434")
 
     return Agent(
         role="Browser Intelligence Specialist",

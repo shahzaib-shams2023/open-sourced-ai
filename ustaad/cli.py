@@ -787,9 +787,9 @@ def run_interactive():
                     from ustaad.llm import _load_config
                     try:
                         cfg = _load_config()
-                        current_model = cfg.get("planner", {}).get("default", "qwen3:8b")
+                        current_model = cfg.get("planner", {}).get("default", "cieloforge/qwen2.5-coder-7b-instruct-spec:latest")
                     except Exception:
-                        current_model = "qwen3:8b"
+                        current_model = "cieloforge/qwen2.5-coder-7b-instruct-spec:latest"
                     console.print(f"[bold cyan]Current Planner Model:[/bold cyan] {current_model}")
                     console.print("[dim]Use: /model <model_name> (e.g. /model qwen3:4b-thinking)[/dim]")
                 else:

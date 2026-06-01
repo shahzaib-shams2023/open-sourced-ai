@@ -515,7 +515,7 @@ def run_task(user_prompt: str, workspace: str = None) -> str:
             task_type=route.task_type.value,
             score=report.score,
             duration=time.time() - pipeline.start_time,
-            model=route.model_override or "qwen3:8b",
+            model=route.model_override or "cieloforge/qwen2.5-coder-7b-instruct-spec:latest",
             error_occurred=not tests_passed
         )
     except Exception as telemetry_error:

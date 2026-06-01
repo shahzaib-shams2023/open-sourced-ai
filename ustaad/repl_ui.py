@@ -35,9 +35,9 @@ def get_statusbar_text():
     
     try:
         config = _load_config()
-        model_str = config.get("planner", {}).get("default", "qwen3:8b")
+        model_str = config.get("planner", {}).get("default", "cieloforge/qwen2.5-coder-7b-instruct-spec:latest")
     except Exception:
-        model_str = "qwen3:8b"
+        model_str = "cieloforge/qwen2.5-coder-7b-instruct-spec:latest"
         
     context_count = len(ACTIVE_CONTEXT_FILES)
     context_str = f"{context_count} file{'s' if context_count != 1 else ''}"

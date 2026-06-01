@@ -3,58 +3,58 @@
 #
 # Available models per task type (Optimized for GTX 1060 6GB / 16GB RAM):
 #   reasoning/planning → qwen3:4b-thinking (lightweight reasoning, fully accelerated in VRAM)
-#   coding/standard    → qwen3:8b (best hardware-fit all-rounder)
-#   review/security    → qwen3:8b
+#   coding/standard    → cieloforge/qwen2.5-coder-7b-instruct-spec:latest (best hardware-fit all-rounder)
+#   review/security    → cieloforge/qwen2.5-coder-7b-instruct-spec:latest
 #   fast/trivial tasks → qwen3.6-2k:latest (extremely fast, low memory footprint)
 #   embeddings         → nomic-embed-text
 
 planner:
-  default: qwen3:8b
+  default: cieloforge/qwen2.5-coder-7b-instruct-spec:latest
   trivial: qwen3.6-2k:latest
-  standard: qwen3:8b
+  standard: cieloforge/qwen2.5-coder-7b-instruct-spec:latest
   complex: qwen3:4b-thinking
 
 coder:
-  default: qwen3:8b
+  default: cieloforge/qwen2.5-coder-7b-instruct-spec:latest
   trivial: qwen3.6-2k:latest
-  standard: qwen3:8b
-  complex: qwen3:8b
+  standard: cieloforge/qwen2.5-coder-7b-instruct-spec:latest
+  complex: cieloforge/qwen2.5-coder-7b-instruct-spec:latest
 
 reviewer:
-  default: qwen3:8b
+  default: cieloforge/qwen2.5-coder-7b-instruct-spec:latest
   trivial: qwen3.6-2k:latest
-  standard: qwen3:8b
-  complex: qwen3:8b
+  standard: cieloforge/qwen2.5-coder-7b-instruct-spec:latest
+  complex: cieloforge/qwen2.5-coder-7b-instruct-spec:latest
 
 researcher:
-  default: qwen3:8b
+  default: cieloforge/qwen2.5-coder-7b-instruct-spec:latest
   trivial: qwen3.6-2k:latest
-  standard: qwen3:8b
-  complex: qwen3:8b
+  standard: cieloforge/qwen2.5-coder-7b-instruct-spec:latest
+  complex: cieloforge/qwen2.5-coder-7b-instruct-spec:latest
 
 security:
-  default: qwen3:8b
+  default: cieloforge/qwen2.5-coder-7b-instruct-spec:latest
   trivial: qwen3.6-2k:latest
-  standard: qwen3:8b
-  complex: qwen3:8b
+  standard: cieloforge/qwen2.5-coder-7b-instruct-spec:latest
+  complex: cieloforge/qwen2.5-coder-7b-instruct-spec:latest
 
 devops:
-  default: qwen3:8b
+  default: cieloforge/qwen2.5-coder-7b-instruct-spec:latest
   trivial: qwen3.6-2k:latest
-  standard: qwen3:8b
-  complex: qwen3:8b
+  standard: cieloforge/qwen2.5-coder-7b-instruct-spec:latest
+  complex: cieloforge/qwen2.5-coder-7b-instruct-spec:latest
 
 debugger:
-  default: qwen3:8b
+  default: cieloforge/qwen2.5-coder-7b-instruct-spec:latest
   trivial: qwen3.6-2k:latest
-  standard: qwen3:8b
+  standard: cieloforge/qwen2.5-coder-7b-instruct-spec:latest
   complex: qwen3:4b-thinking
 
 shell:
-  default: qwen3:8b
+  default: cieloforge/qwen2.5-coder-7b-instruct-spec:latest
   trivial: qwen3.6-2k:latest
-  standard: qwen3:8b
-  complex: qwen3:8b
+  standard: cieloforge/qwen2.5-coder-7b-instruct-spec:latest
+  complex: cieloforge/qwen2.5-coder-7b-instruct-spec:latest
 
 # Execution mode defaults
 execution:
