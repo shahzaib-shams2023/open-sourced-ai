@@ -25,6 +25,53 @@ class MemoryEntry:
     tags: list[str] = field(default_factory=list)
 
 
+class KnowledgeGraph:
+    """Lightweight JSON-backed Knowledge Graph for mapping project relationships."""
+    def __init__(self, db_path: str):
+        self.db_path = db_path
+        self.nodes = {}  # id -> dict
+        self.edges = []  # list of dict
+        self._load()
+
+    def add_node(self, node_id: str, node_type: str, **kwargs):
+        if node_id not in self.nodes:
+            self.nodes[node_id] = {"id": node_id, "type": node_type, "attributes": kwargs}
+        else:
+            self.nodes[node_id]["attributes"].update(kwargs)
+        self._save()
+
+    def add_edge(self, source_id: str, target_id: str, relation: str):
+        edge = {"source": source_id, "target": target_id, "relation": relation}
+        if edge not in self.edges:
+            self.edges.append(edge)
+            self._save()
+
+    def get_related(self, node_id: str) -> list[dict]:
+        related = []
+        for edge in self.edges:
+            if edge["source"] == node_id:
+                related.append({"relation": edge["relation"], "target": self.nodes.get(edge["target"])})
+            elif edge["target"] == node_id:
+                related.append({"relation": f"inverse_{edge['relation']}", "target": self.nodes.get(edge["source"])})
+        return related
+
+    def _load(self):
+        if os.path.exists(self.db_path):
+            try:
+                data = json.loads(Path(self.db_path).read_text(encoding="utf-8"))
+                self.nodes = data.get("nodes", {})
+                self.edges = data.get("edges", [])
+            except Exception:
+                pass
+
+    def _save(self):
+        try:
+            data = {"nodes": self.nodes, "edges": self.edges}
+            Path(self.db_path).write_text(json.dumps(data, indent=2), encoding="utf-8")
+        except Exception:
+            pass
+
+
 class ProjectMemory:
     """
     Persistent project memory stored in .ustaad/memory/.
@@ -43,6 +90,9 @@ class ProjectMemory:
         # Structured memory file
         self._struct_path = os.path.join(self._dir, "structured.json")
         self._structured = self._load_structured()
+        
+        # Knowledge Graph
+        self.graph = KnowledgeGraph(os.path.join(self._dir, "knowledge_graph.json"))
 
     def save(self, content: str, category: str = "task", tags: list[str] = None):
         """Save a memory entry."""
@@ -66,6 +116,12 @@ class ProjectMemory:
         # Save to structured file
         self._structured.append(asdict(entry))
         self._save_structured()
+        
+        # Save to Knowledge Graph
+        self.graph.add_node(entry.id, category, content=entry.content[:100])
+        for tag in (tags or []):
+            self.graph.add_node(tag, "tag")
+            self.graph.add_edge(entry.id, tag, "has_tag")
 
     def search(self, query: str, n_results: int = 5) -> list[dict]:
         """Search memory semantically."""
@@ -114,6 +170,11 @@ class ProjectMemory:
                 lines.append(f"    - [{r.get('category', '?')}] {r.get('content', '')[:150]}")
         if len(lines) == 1:
             lines.append("  No memories stored yet.")
+            
+        # Add quick graph summary
+        if self.graph.nodes:
+            lines.append(f"\n[KNOWLEDGE GRAPH] {len(self.graph.nodes)} entities, {len(self.graph.edges)} relationships")
+            
         return "\n".join(lines)
 
     def _load_structured(self) -> list:

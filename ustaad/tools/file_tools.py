@@ -188,3 +188,66 @@ def search_files_tool(path: str, pattern: str) -> str:
         return result
     except Exception as e:
         return f"Error searching files: {str(e)}"
+
+
+def get_file_skeleton(path: str) -> str:
+    """Generates a skeleton map of classes and functions for a file."""
+    try:
+        p = Path(path)
+        if not p.exists():
+            return f"Error: File does not exist: {path}"
+            
+        content = p.read_text(encoding="utf-8", errors="ignore")
+        ext = p.suffix.lower()
+        skeleton = []
+        
+        if ext == ".py":
+            import ast
+            try:
+                tree = ast.parse(content)
+                class SkeletonVisitor(ast.NodeVisitor):
+                    def visit_ClassDef(self, node):
+                        skeleton.append(f"{node.lineno}: class {node.name}:")
+                        self.generic_visit(node)
+                    def visit_FunctionDef(self, node):
+                        skeleton.append(f"{node.lineno}: {'    ' if getattr(node, 'is_method', False) else ''}def {node.name}(...):")
+                    def visit_AsyncFunctionDef(self, node):
+                        skeleton.append(f"{node.lineno}: {'    ' if getattr(node, 'is_method', False) else ''}async def {node.name}(...):")
+                
+                # Tag methods to indent them
+                for node in ast.walk(tree):
+                    if isinstance(node, ast.ClassDef):
+                        for child in node.body:
+                            if isinstance(child, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                                child.is_method = True
+                
+                SkeletonVisitor().visit(tree)
+            except Exception:
+                pass
+        
+        # Fallback / JS / TS regex approach
+        if not skeleton:
+            lines = content.splitlines()
+            for i, line in enumerate(lines):
+                if re.match(r"^\s*(?:export\s+)?(?:default\s+)?(?:class|interface|function|def|async\s+def)\s+\w+", line):
+                    if len(line) - len(line.lstrip()) <= 4:
+                        skeleton.append(f"{i+1}: {line.rstrip()}")
+                        
+        if not skeleton:
+            return "No classes or functions found."
+            
+        return "\n".join(skeleton)
+    except Exception as e:
+        return f"Error extracting skeleton: {str(e)}"
+
+
+@tool("get_file_skeleton")
+def get_file_skeleton_tool(path: str) -> str:
+    """
+    Returns a highly condensed AST skeleton of a file, showing only 
+    class and function definitions with their line numbers.
+    Use this to understand a file's structure quickly and save context tokens
+    before reading the entire file.
+    """
+    return get_file_skeleton(path)
+

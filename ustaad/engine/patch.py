@@ -147,6 +147,46 @@ class PatchEngine:
         )
         return self.apply_patch(path, [hunk])
 
+    def apply_unified_diff(self, path: str, diff_text: str) -> PatchResult:
+        """Parse a unified diff and apply it via search/replace hunks."""
+        hunks = []
+        lines = diff_text.splitlines()
+        
+        current_search = []
+        current_replace = []
+        in_hunk = False
+        
+        for line in lines:
+            if line.startswith("@@"):
+                if in_hunk and (current_search or current_replace):
+                    hunks.append(PatchHunk(
+                        search="\n".join(current_search),
+                        replace="\n".join(current_replace)
+                    ))
+                current_search = []
+                current_replace = []
+                in_hunk = True
+            elif in_hunk:
+                if line.startswith("-"):
+                    current_search.append(line[1:])
+                elif line.startswith("+"):
+                    current_replace.append(line[1:])
+                elif line.startswith(" "):
+                    current_search.append(line[1:])
+                    current_replace.append(line[1:])
+                else:
+                    if line.strip() != "\\ No newline at end of file":
+                        current_search.append(line)
+                        current_replace.append(line)
+        
+        if in_hunk and (current_search or current_replace):
+            hunks.append(PatchHunk(
+                search="\n".join(current_search),
+                replace="\n".join(current_replace)
+            ))
+            
+        return self.apply_patch(path, hunks)
+
     # -------------------------------------------------------------------
     # Diff generation
     # -------------------------------------------------------------------

@@ -8,8 +8,8 @@ detailed execution plans before any code is written.
 
 from crewai import Agent
 from ustaad.llm import load_model
-from ustaad.tools.file_tools import read_file_tool, list_directory_tool, search_files_tool
-from ustaad.tools.search_tools import semantic_search_tool
+from ustaad.tools.file_tools import read_file_tool, list_directory_tool, search_files_tool, get_file_skeleton_tool
+from ustaad.tools.search_tools import semantic_search_tool, query_knowledge_graph_tool
 
 PLANNER_BACKSTORY = """You are USTAAD's Planning Agent — an elite software architect.
 
@@ -37,6 +37,6 @@ planner = Agent(
     backstory=PLANNER_BACKSTORY,
     verbose=True,
     allow_delegation=False,
-    tools=[read_file_tool, list_directory_tool, search_files_tool],
+    tools=[read_file_tool, list_directory_tool, search_files_tool, get_file_skeleton_tool, query_knowledge_graph_tool],
     llm=load_model("gemma3:12b"),
 )

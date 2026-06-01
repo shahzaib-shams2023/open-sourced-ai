@@ -25,6 +25,23 @@ def patch_file_tool(path: str, search: str, replace: str) -> str:
     return f"[PATCH FAILED] {path} — {result.error}"
 
 
+@tool("unified_diff_patch")
+def unified_diff_patch_tool(path: str, diff_text: str) -> str:
+    """
+    Apply a standard unified diff to a file.
+    The diff should contain context lines, removals (-), and additions (+).
+    This allows complex, multi-line edits in a single operation.
+    """
+    import os
+    from ustaad.engine.patch import PatchEngine
+    workspace = os.getcwd()
+    engine = PatchEngine(workspace)
+    result = engine.apply_unified_diff(path, diff_text)
+    if result.success:
+        return f"[PATCHED] {path} — {result.hunks_applied} hunk(s) applied\n{result.diff[:2000]}"
+    return f"[PATCH FAILED] {path} — {result.error}"
+
+
 @tool("preview_diff")
 def preview_diff_tool(path: str, search: str, replace: str) -> str:
     """
