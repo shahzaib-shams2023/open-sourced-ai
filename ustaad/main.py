@@ -395,24 +395,28 @@ def run_task(user_prompt: str, workspace: str = None) -> str:
         agent_phase_name = "DEBUG"
 
     send_progress_update(agent_phase_name, "Swarm agents executing roles...")
-    with phase_spinner(agent_phase_name, f"{len(agents)} agent(s) working...") as timer:
-        crew = Crew(agents=agents, tasks=tasks, verbose=False)
-        result = None
-        for attempt in range(2):  # 1 retry on timeout
-            try:
-                result = crew.kickoff()
-                break
-            except Exception as e:
-                err_str = str(e)
-                if attempt == 0 and ("timeout" in err_str.lower() or "connection" in err_str.lower()):
-                    console.print(f"[yellow]   ⚠ LLM timeout — retrying (attempt 2/2)...[/yellow]")
-                    continue
-                console.print(f"[red]   ✗ Crew execution failed: {err_str[:200]}[/red]")
-                result = f"[ERROR] Pipeline failed: {err_str[:500]}"
-                break
-        if result is None:
-            result = "[ERROR] Pipeline failed after 2 attempts (LLM timeout)"
-            console.print(f"[red]   ✗ {result}[/red]")
+    timer = PhaseTimer(name=agent_phase_name)
+    timer.start_time = time.time()
+    timer.status = "running"
+    crew = Crew(agents=agents, tasks=tasks, verbose=True)
+    result = None
+    for attempt in range(2):  # 1 retry on timeout
+        try:
+            result = crew.kickoff()
+            break
+        except Exception as e:
+            err_str = str(e)
+            if attempt == 0 and ("timeout" in err_str.lower() or "connection" in err_str.lower()):
+                console.print(f"[yellow]   ⚠ LLM timeout — retrying (attempt 2/2)...[/yellow]")
+                continue
+            console.print(f"[red]   ✗ Crew execution failed: {err_str[:200]}[/red]")
+            result = f"[ERROR] Pipeline failed: {err_str[:500]}"
+            break
+    if result is None:
+        result = "[ERROR] Pipeline failed after 2 attempts (LLM timeout)"
+        console.print(f"[red]   ✗ {result}[/red]")
+    timer.end_time = time.time()
+    timer.status = "done"
     pipeline.phases.append(timer)
 
     # --- FAILSAFE FILE EXTRACTION ---
