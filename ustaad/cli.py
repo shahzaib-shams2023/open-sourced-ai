@@ -57,6 +57,10 @@ COMMAND_STATS = {
     "files_viewed": 0
 }
 
+from ustaad.core.commands import get_command_registry, CommandContext
+from ustaad.core.session import get_session_manager
+from ustaad.core.events import get_event_bus, EventType
+
 
 
 
@@ -125,7 +129,6 @@ def cmd_plugins():
     """List all dynamically loaded plugins and their tools."""
     from ustaad.core.plugin_system import PluginSystem
     from rich.table import Table
-    from ustaad.repl_ui import print_welcome_commands, print_mode, UstaadCompleter, get_statusbar_text
     from rich.panel import Panel
     
     ps = PluginSystem(os.getcwd())
@@ -361,6 +364,7 @@ def cmd_git():
 @app.command("mode")
 def cmd_mode():
     """Display current execution mode."""
+    from ustaad.repl_ui import print_mode
     print_mode()
 
 
@@ -591,13 +595,23 @@ This file serves as the persistent context memory for the USTAAD Engineering Age
 
 def cmd_compact():
     """Compact history and memory contexts."""
+    from ustaad.core.session import get_session_manager
     console.print("[bold cyan]⚡ Compacting session history and optimizing context token limits...[/bold cyan]")
-    console.print("[bold green]✓ Context history optimized. 0 tokens carried over.[/bold green]")
+    
+    session = get_session_manager(os.getcwd())
+    summary = session.compact()
+    
+    if summary:
+        console.print(f"[bold green]✓ Context history optimized.[/bold green]")
+        console.print(f"[dim]  Summarized {len(session.state.messages)} messages into a {len(summary)} character summary.[/dim]")
+    else:
+        console.print(f"[yellow]⚠ Context history is already optimized or too short to compact.[/yellow]")
 
 
-from ustaad.repl_ui import print_welcome_commands, print_mode, UstaadCompleter, get_statusbar_text
+
 def run_interactive():
-    from prompt_toolkit import HTML
+    from ustaad.repl_ui import print_welcome_commands, print_mode, UstaadCompleter, get_statusbar_text
+    from prompt_toolkit import PromptSession, HTML
     console.print(BANNER_PREMIUM)
     
     if not is_ollama_running():
@@ -664,6 +678,11 @@ def run_interactive():
         cmd = cmd_parts[0].lower()
         args = cmd_parts[1:] if len(cmd_parts) > 1 else []
 
+        # --- Extensible Command Framework Integration ---
+        registry = get_command_registry()
+        session_manager = get_session_manager(os.getcwd())
+        event_bus = get_event_bus()
+
         if cmd.startswith("/"):
             if cmd in ("/exit", "/quit"):
                 console.print("[dim]Goodbye. 👋[/dim]")
@@ -674,7 +693,24 @@ def run_interactive():
                 print_welcome_commands()
                 console.print()
                 continue
-            elif cmd == "/scan":
+            
+            # Execute through the new CommandRegistry first
+            context = CommandContext(
+                workspace=os.getcwd(),
+                args=args,
+                raw_input=inp,
+                session=session_manager,
+                event_bus=event_bus,
+                console=console
+            )
+            
+            # If the command exists in the registry, execute it there
+            if registry.has_command(cmd):
+                registry.execute(cmd, args, context)
+                continue
+                
+            # --- Fallback for legacy CLI commands not yet migrated to the registry ---
+            if cmd == "/scan":
                 cmd_scan()
                 continue
             elif cmd == "/index":
@@ -938,7 +974,7 @@ def run_interactive():
                 continue
 
             elif cmd == "/help":
-                print_welcome_commands()
+                registry.print_help()
                 continue
             else:
                 console.print(f"[red]Unknown command: {cmd}. Type /help for available commands.[/red]")
@@ -1042,6 +1078,7 @@ def main(
     if debug_mode:
         user_prompt = f"[debug] {user_prompt}"
     console.print(BANNER_PREMIUM)
+    from ustaad.repl_ui import print_mode
     print_mode()
     console.print()
     console.print(Rule("[bold green]⚡ USTAAD Engaged[/bold green]", style="green"))

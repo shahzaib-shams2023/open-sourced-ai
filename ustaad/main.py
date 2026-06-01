@@ -1,13 +1,16 @@
 """
-USTAAD Main Orchestration Engine — v2.0
+USTAAD Main Orchestration Engine — v3.0
 
-The autonomous execution loop, now with:
+The autonomous execution loop with full lifecycle event system:
+- Event-driven lifecycle hooks (PreToolUse, PostToolUse, etc.)
+- Session history & conversation context
+- Audit logging for all operations
+- Instruction cascade (AGENTS.md hierarchy)
+- Secret detection on file writes
+- Permission-checked tool invocations
 - Smart task routing (trivial/standard/complex)
-- Shared single directory walk
 - Cached repo indexing
-- Premium progress display
 - Integrated repair loop
-- Per-agent context trimming
 - Phase timing breakdown
 
 Pipeline:
@@ -51,6 +54,13 @@ from ustaad.memory import ProjectMemory
 from ustaad.tools.file_tools import write_file
 from ustaad.llm import load_model_for_role_and_complexity
 
+# New v3.0 systems
+from ustaad.core.events import get_event_bus, EventType
+from ustaad.core.session import get_session_manager
+from ustaad.core.audit import get_audit_logger
+from ustaad.core.instructions import InstructionCascade
+from ustaad.core.secrets import get_secret_scanner
+
 console = Console()
 
 
@@ -80,6 +90,30 @@ def run_task(user_prompt: str, workspace: str = None) -> str:
     pipeline.task_description = user_prompt
     workspace = workspace or os.getcwd()
     mode = get_mode()
+
+    # Initialize v3.0 systems
+    event_bus = get_event_bus()
+    session = get_session_manager(workspace)
+    audit = get_audit_logger(workspace, session.state.session_id)
+    secret_scanner = get_secret_scanner()
+
+    # Load workspace hooks
+    event_bus.load_hooks_from_config(workspace)
+
+    # Sanitize prompt
+    from ustaad.core.safety import SafetyScanner
+    user_prompt = SafetyScanner.sanitize(user_prompt)
+
+    # Emit session/task events
+    event_bus.emit(EventType.TASK_CREATED, data={"prompt": user_prompt, "workspace": workspace})
+    session.add_user_message(user_prompt)
+    audit.log_agent_action("orchestrator", "task_created", user_prompt[:200])
+
+    # Create safety git checkpoint before agent touches files
+    from ustaad.engine.git import GitEngine
+    git = GitEngine(workspace)
+    safe_prompt = user_prompt[:50].replace('\n', ' ')
+    git.checkpoint(f"Task: {safe_prompt}...")
 
     # Defaults for verification
     tests_passed = True
@@ -180,6 +214,11 @@ def run_task(user_prompt: str, workspace: str = None) -> str:
     # --- BUILD CONTEXT (trimmed per complexity) ---
     from ustaad.core.skills import ContextBuilder, SkillManager
     
+    # v3.0: Use instruction cascade instead of simple ContextBuilder
+    cascade = InstructionCascade(workspace)
+    cascaded_instructions = cascade.load_all()
+    
+    # Fallback to legacy ContextBuilder for backwards compatibility
     context_builder = ContextBuilder(workspace)
     agents_md = context_builder.load_agents_md()
     ai_md = context_builder.load_ai_md()
@@ -195,19 +234,29 @@ def run_task(user_prompt: str, workspace: str = None) -> str:
             skill_docs.append(f"--- SKILL: {s['name']} ---\n{s['body']}")
         skills_ctx = "\n\n".join(skill_docs)
 
+    # v3.0: Include session history for conversation continuity
+    session_ctx = session.get_context_string(max_messages=10)
+
     ctx = ContextManager(max_chars=route.context_budget)
     ctx.add("USER REQUEST", user_prompt, priority=1)
     
-    if agents_md:
-        ctx.add("AGENT INSTRUCTIONS (AGENTS.md)", agents_md, priority=2)
-    if ai_md:
-        ctx.add("PROJECT CONVENTIONS (AI.md)", ai_md, priority=3)
+    # Use cascaded instructions (AGENTS.md hierarchy) if available, fallback to legacy
+    if cascaded_instructions:
+        ctx.add("PROJECT INSTRUCTIONS (Cascaded)", cascaded_instructions, priority=2)
+    else:
+        if agents_md:
+            ctx.add("AGENT INSTRUCTIONS (AGENTS.md)", agents_md, priority=2)
+        if ai_md:
+            ctx.add("PROJECT CONVENTIONS (AI.md)", ai_md, priority=3)
+
     if skills_ctx:
         ctx.add("ACTIVE SKILLS", skills_ctx, priority=4)
+    if session_ctx:
+        ctx.add("SESSION HISTORY", session_ctx, priority=5)
         
-    ctx.add("PLATFORM", f"OS: {platform.system()} | Shell: {'PowerShell/CMD' if sys.platform == 'win32' else 'bash'} | IMPORTANT: Use write_file tool to create files, NEVER shell commands.", priority=5)
-    ctx.add("WORKSPACE SCAN", scan_ctx, priority=6)
-    ctx.add("WORKSPACE PATH", workspace, priority=7)
+    ctx.add("PLATFORM", f"OS: {platform.system()} | Shell: {'PowerShell/CMD' if sys.platform == 'win32' else 'bash'} | IMPORTANT: Use write_file tool to create files, NEVER shell commands.", priority=6)
+    ctx.add("WORKSPACE SCAN", scan_ctx, priority=7)
+    ctx.add("WORKSPACE PATH", workspace, priority=8)
 
     # Only add heavy context for standard/complex tasks
     if route.complexity != TaskComplexity.TRIVIAL:
@@ -215,7 +264,7 @@ def run_task(user_prompt: str, workspace: str = None) -> str:
         ctx.add("GIT STATUS", git_ctx, priority=15)
         ctx.add("MEMORY", mem_ctx, priority=20)
         if rag_ctx:
-            ctx.add("WORKSPACE DOCUMENTATION", rag_ctx, priority=7)
+            ctx.add("WORKSPACE DOCUMENTATION", rag_ctx, priority=9)
         ctx.add("EXECUTION MODE", f"{mode_label} | Dangerous ops require confirmation.", priority=30)
 
         # Relevant search results
@@ -395,6 +444,7 @@ def run_task(user_prompt: str, workspace: str = None) -> str:
         agent_phase_name = "DEBUG"
 
     send_progress_update(agent_phase_name, "Swarm agents executing roles...")
+    event_bus.emit(EventType.PIPELINE_PHASE_START, data={"phase": agent_phase_name, "agents": route.agents_needed})
     timer = PhaseTimer(name=agent_phase_name)
     timer.start_time = time.time()
     timer.status = "running"
@@ -408,9 +458,12 @@ def run_task(user_prompt: str, workspace: str = None) -> str:
             err_str = str(e)
             if attempt == 0 and ("timeout" in err_str.lower() or "connection" in err_str.lower()):
                 console.print(f"[yellow]   ⚠ LLM timeout — retrying (attempt 2/2)...[/yellow]")
+                audit.log_agent_action("orchestrator", "retry", f"LLM timeout on attempt 1: {err_str[:200]}")
                 continue
             console.print(f"[red]   ✗ Crew execution failed: {err_str[:200]}[/red]")
             result = f"[ERROR] Pipeline failed: {err_str[:500]}"
+            event_bus.emit(EventType.TASK_FAILED, data={"error": err_str[:500]})
+            audit.log_agent_action("orchestrator", "pipeline_failed", err_str[:200])
             break
     if result is None:
         result = "[ERROR] Pipeline failed after 2 attempts (LLM timeout)"
@@ -418,11 +471,27 @@ def run_task(user_prompt: str, workspace: str = None) -> str:
     timer.end_time = time.time()
     timer.status = "done"
     pipeline.phases.append(timer)
+    event_bus.emit(EventType.PIPELINE_PHASE_END, data={"phase": agent_phase_name, "duration": timer.end_time - timer.start_time})
 
     # --- FAILSAFE FILE EXTRACTION ---
     try:
         from ustaad.core.failsafe import extract_and_materialize_files
-        extract_and_materialize_files(str(result), workspace)
+        written_files = extract_and_materialize_files(str(result), workspace)
+        
+        # v3.0: Scan extracted files for secrets
+        for wf in (written_files or []):
+            try:
+                findings = secret_scanner.scan_file(wf)
+                if findings:
+                    console.print(f"[bold yellow]   ⚠ SECRET DETECTED in {wf}:[/bold yellow]")
+                    console.print(f"[yellow]     {secret_scanner.format_findings(findings)}[/yellow]")
+                    audit.log_security_event("secret_detected", "high", f"Secret found in {wf}")
+                    event_bus.emit(EventType.FILE_CHANGED, data={"path": wf, "secrets_found": len(findings)})
+                else:
+                    event_bus.emit(EventType.POST_FILE_WRITE, data={"path": wf})
+                    audit.log_file_operation("failsafe", "write", wf)
+            except Exception:
+                pass
     except Exception as fe:
         console.print(f"[dim yellow]   ⚠ Failsafe file extractor failed: {fe}[/dim yellow]")
 
@@ -537,9 +606,28 @@ def run_task(user_prompt: str, workspace: str = None) -> str:
         category="task",
     )
 
+    # v3.0: Save to session history
+    session.add_assistant_message(str(result)[:3000], metadata={
+        "task_type": route.task_type.value,
+        "complexity": route.complexity.value,
+        "score": report.score,
+        "files_created": files_created,
+        "files_modified": files_modified,
+    })
+
     output_path = os.path.join(workspace, "ustaad_output.md")
     write_file(output_path, str(result))
     console.print(f"[dim]   📄 Output saved: {output_path}[/dim]")
+
+    # v3.0: Emit completion events and log audit
+    event_bus.emit(EventType.TASK_COMPLETED, data={
+        "prompt": user_prompt[:200],
+        "score": report.score,
+        "duration": time.time() - pipeline.start_time,
+        "files_created": len(files_created),
+        "files_modified": len(files_modified),
+    })
+    audit.log_agent_action("orchestrator", "task_completed", f"Score: {report.score:.2f}, Files: {len(touched_files)}")
 
     send_progress_update("COMPLETE", "Task finalized and outputs compiled.", "done")
 

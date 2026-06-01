@@ -10,6 +10,9 @@ from crewai.tools import tool
 
 from ustaad.core.safety import get_safety_gate
 from ustaad.core.execution_mode import get_mode
+from ustaad.core.permissions import get_permission_manager, PermissionLevel
+from ustaad.core.events import get_event_bus, EventType
+from ustaad.core.audit import get_audit_logger
 
 
 def run_command(command: str) -> dict:
@@ -38,15 +41,30 @@ def run_command(command: str) -> dict:
 
 def run_command_safe(command: str) -> dict:
     """
-    Execute a shell command with safety gate.
-    Dangerous commands require user confirmation.
+    Execute a shell command with safety gate and permissions.
     """
+    import os
     gate = get_safety_gate()
     mode = get_mode()
+    perms = get_permission_manager(os.getcwd())
+    event_bus = get_event_bus()
+    audit = get_audit_logger(os.getcwd())
 
     classification = mode.classify_command(command)
 
+    # 1. Check strict permissions
+    if perms.check_tool("run_command") == PermissionLevel.DENY:
+        audit.log_command("system", command, -1, "[BLOCKED] Permission denied")
+        return {
+            "stdout": "",
+            "stderr": f"[BLOCKED] Permission denied to run shell commands.",
+            "returncode": -1,
+            "blocked": True,
+        }
+
+    # 2. Check interactive safety gate
     if not gate.confirm_command(command):
+        audit.log_command("system", command, -1, "[BLOCKED] User rejected command")
         return {
             "stdout": "",
             "stderr": f"[BLOCKED] Command rejected by safety gate: {command}",
@@ -54,8 +72,11 @@ def run_command_safe(command: str) -> dict:
             "blocked": True,
         }
 
+    event_bus.emit(EventType.PRE_TOOL_USE, data={"tool": "run_command", "args": {"command": command}})
+
+    import time
+    start_time = time.time()
     try:
-        import os
         import subprocess
         result = subprocess.run(
             command,
@@ -65,14 +86,23 @@ def run_command_safe(command: str) -> dict:
             timeout=120,
             cwd=os.getcwd()
         )
+        duration = time.time() - start_time
+        
+        audit.log_command("agent", command, result.returncode, result.stdout[:200] or result.stderr[:200], duration)
+        event_bus.emit(EventType.POST_TOOL_USE, data={"tool": "run_command", "success": result.returncode == 0})
+        
         return {
             "stdout": result.stdout,
             "stderr": result.stderr,
             "returncode": result.returncode,
         }
     except subprocess.TimeoutExpired:
+        duration = time.time() - start_time
+        audit.log_command("agent", command, -1, "[TIMEOUT]", duration)
         return {"error": f"Command timed out after 120s: {command}"}
     except Exception as e:
+        duration = time.time() - start_time
+        audit.log_command("agent", command, -1, f"[ERROR] {str(e)}", duration)
         return {"error": str(e)}
 
 

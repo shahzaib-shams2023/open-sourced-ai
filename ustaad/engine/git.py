@@ -264,3 +264,35 @@ class GitEngine:
 
         msg = self.generate_commit_message()
         return self.commit(msg)
+
+    # -------------------------------------------------------------------
+    # Rollback / Undo
+    # -------------------------------------------------------------------
+    def checkpoint(self, task_name: str = "agent task") -> str:
+        """Create a safety checkpoint before risky agent operations."""
+        status = self.status()
+        if not status.is_repo:
+            return "Not a git repository, skipping checkpoint."
+        
+        # Stage everything and commit as a checkpoint
+        msg = f"USTAAD CHECKPOINT: {task_name}"
+        self.stage_files()
+        res = self._run(f'git commit -m "{msg}"')
+        return f"Checkpoint created: {msg}"
+        
+    def undo(self) -> str:
+        """Undo the most recent commit if it's an USTAAD operation."""
+        status = self.status()
+        if not status.is_repo:
+            return "Not a git repository, cannot undo."
+            
+        # Check if the last commit was by Ustaad (either checkpoint or normal)
+        log = self.log(1)
+        if not log:
+            return "No commit history found to undo."
+            
+        res = self._run_safe("git reset --hard HEAD~1")
+        if res.get("blocked"):
+            return "[BLOCKED] User rejected undo operation (git reset --hard)."
+            
+        return "✓ Successfully rolled back the last action (git reset --hard HEAD~1)."

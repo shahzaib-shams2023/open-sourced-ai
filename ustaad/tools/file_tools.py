@@ -4,6 +4,9 @@ from pathlib import Path
 from crewai.tools import tool
 
 from ustaad.core.safety import get_safety_gate
+from ustaad.core.permissions import get_permission_manager, PermissionLevel
+from ustaad.core.secrets import get_secret_scanner
+from ustaad.core.events import get_event_bus, EventType
 
 
 def _sanitize_html_content(content: str, path: str) -> str:
@@ -24,6 +27,9 @@ def _sanitize_html_content(content: str, path: str) -> str:
 
 def read_file(path: str) -> str:
     try:
+        perms = get_permission_manager(os.getcwd())
+        if perms.check_file_access(path, "read") == PermissionLevel.DENY:
+            return f"[BLOCKED] Permission denied to read: {path}"
         return Path(path).read_text(encoding="utf-8", errors="ignore")
     except Exception as e:
         return f"Error: Could not read file at '{path}': {str(e)}"
@@ -34,17 +40,34 @@ def write_file(path: str, content: str) -> str:
         p = Path(path)
         is_overwrite = p.exists()
 
+        perms = get_permission_manager(os.getcwd())
+        perm_level = perms.check_file_access(path, "write")
+        if perm_level == PermissionLevel.DENY:
+            return f"[BLOCKED] Permission denied to write: {path}"
+
         # Safety gate for overwrites of critical files
-        if is_overwrite:
+        if is_overwrite or perm_level == PermissionLevel.CONFIRM:
             gate = get_safety_gate()
-            if not gate.confirm_file_write(str(p), is_overwrite=True):
-                return f"[BLOCKED] User rejected overwrite of: {path}"
+            if not gate.confirm_file_write(str(p), is_overwrite=is_overwrite):
+                return f"[BLOCKED] User rejected write of: {path}"
+
+        # Real-time Secret Scanning
+        scanner = get_secret_scanner()
+        findings = scanner.scan_content(content, path)
+        if findings:
+            from rich.console import Console
+            c = Console()
+            c.print(f"[bold red]⚠ BLOCKED: Secrets detected in {path}[/bold red]")
+            c.print(f"[yellow]{scanner.format_findings(findings)}[/yellow]")
+            return f"[BLOCKED] Secret detected in content. Remove secrets before writing."
 
         # Sanitize LLM output corruptions
         content = _sanitize_html_content(content, path)
 
         p.parent.mkdir(parents=True, exist_ok=True)
         p.write_text(content, encoding="utf-8")
+        
+        get_event_bus().emit(EventType.POST_FILE_WRITE, data={"path": path})
         action = "Overwritten" if is_overwrite else "Created"
         return f"Success: {action} {path}"
     except Exception as e:
@@ -54,9 +77,28 @@ def write_file(path: str, content: str) -> str:
 def append_file(path: str, content: str) -> str:
     try:
         p = Path(path)
+        
+        perms = get_permission_manager(os.getcwd())
+        perm_level = perms.check_file_access(path, "write")
+        if perm_level == PermissionLevel.DENY:
+            return f"[BLOCKED] Permission denied to append: {path}"
+            
+        if perm_level == PermissionLevel.CONFIRM:
+            gate = get_safety_gate()
+            if not gate.confirm_file_write(str(p), is_overwrite=True):
+                return f"[BLOCKED] User rejected append to: {path}"
+                
+        # Real-time Secret Scanning
+        scanner = get_secret_scanner()
+        findings = scanner.scan_content(content, path)
+        if findings:
+            return f"[BLOCKED] Secret detected in content. Remove secrets before writing."
+
         p.parent.mkdir(parents=True, exist_ok=True)
         with open(path, "a", encoding="utf-8") as f:
             f.write(content)
+            
+        get_event_bus().emit(EventType.FILE_CHANGED, data={"path": path, "action": "append"})
         return f"Success: Appended content to {path}"
     except Exception as e:
         return f"Error: Could not append to file at '{path}': {str(e)}"
@@ -68,11 +110,16 @@ def delete_file(path: str) -> str:
         if not p.exists():
             return f"Error: File does not exist: {path}"
 
+        perms = get_permission_manager(os.getcwd())
+        if perms.check_file_access(path, "delete") == PermissionLevel.DENY:
+            return f"[BLOCKED] Permission denied to delete: {path}"
+
         gate = get_safety_gate()
         if not gate.confirm_file_delete(str(p)):
             return f"[BLOCKED] User rejected deletion of: {path}"
 
         p.unlink()
+        get_event_bus().emit(EventType.FILE_CHANGED, data={"path": path, "action": "delete"})
         return f"Success: Deleted {path}"
     except Exception as e:
         return f"Error: Could not delete file at '{path}': {str(e)}"
