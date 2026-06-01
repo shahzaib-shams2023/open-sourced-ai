@@ -1,5 +1,5 @@
 """
-USTAAD Operator Kit & Dashboard Subsystem
+USTAAD Operator Kit
 
 All imports are lazy to avoid heavy dependency loading at CLI startup.
 """

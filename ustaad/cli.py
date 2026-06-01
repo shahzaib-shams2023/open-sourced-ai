@@ -336,20 +336,7 @@ def cli_doc(query: str):
     cmd_doc(query)
 
 
-@app.command("dashboard")
-def cli_dashboard():
-    """Launch the premium Operator Kit desktop dashboard."""
-    from ustaad.operator.dashboard_server import start_dashboard
-    start_dashboard(os.getcwd())
-    # Keep main thread alive while dashboard runs
-    import time
-    try:
-        console.print("[dim]Dashboard running at http://localhost:8000 — Press Ctrl+C to stop.[/dim]")
-        while True:
-            time.sleep(1)
-    except KeyboardInterrupt:
-        from ustaad.operator.dashboard_server import stop_dashboard
-        stop_dashboard()
+
 
 
 @app.command("test")
@@ -949,10 +936,7 @@ def run_interactive():
                 from ustaad.operator.session_manager import load_session
                 load_session(os.getcwd())
                 continue
-            elif cmd == "/dashboard":
-                from ustaad.operator.dashboard_server import start_dashboard
-                start_dashboard(os.getcwd())
-                continue
+
             elif cmd == "/help":
                 print_welcome_commands()
                 continue
@@ -1009,9 +993,7 @@ def run_interactive():
         console.print(Rule("[bold green]⚡ USTAAD Engaged[/bold green]", style="green"))
         console.print()
         
-        # Auto-launch visualizer for tasks
-        from ustaad.operator.dashboard_server import start_dashboard
-        start_dashboard(os.getcwd(), open_browser=True)
+
         
         result = run_task(task_prompt, workspace=os.getcwd())
         console.print()
@@ -1065,9 +1047,7 @@ def main(
     console.print(Rule("[bold green]⚡ USTAAD Engaged[/bold green]", style="green"))
     console.print()
     
-    # Auto-launch visualizer for tasks
-    from ustaad.operator.dashboard_server import start_dashboard
-    start_dashboard(os.getcwd(), open_browser=True)
+
     
     result = run_task(user_prompt, workspace=os.getcwd())
     console.print()

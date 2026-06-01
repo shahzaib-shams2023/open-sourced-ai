@@ -94,7 +94,7 @@ class UstaadCompleter(Completer):
                 "/kit": "Operator Kit: init, check, learn",
                 "/save": "Save active session context to disk",
                 "/load": "Restore saved session context",
-                "/dashboard": "Launch premium desktop status dashboard",
+
                 "/history": "View interactive prompt history",
                 "/help": "Show list of commands & shortcuts",
                 "/exit": "Exit the USTAAD session",
@@ -159,7 +159,7 @@ def print_welcome_commands():
     table.add_row("/kit learn <n> \"<d>\"", "Operator Kit", "Synthesize a new reusable AI skill")
     table.add_row("/save", "Operator Kit", "Save active session context to disk")
     table.add_row("/load", "Operator Kit", "Restore saved session context")
-    table.add_row("/dashboard", "Operator Kit", "Launch premium desktop status dashboard")
+
     table.add_row("/clear", "Utility", "Clear screen")
     table.add_row("/help", "Utility", "Show this interactive command map")
     table.add_row("/exit", "Utility", "Close active USTAAD session")

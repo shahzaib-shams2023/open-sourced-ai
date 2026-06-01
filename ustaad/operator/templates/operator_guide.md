@@ -5,11 +5,9 @@ Welcome to your AI Assistant Operator Kit! This toolkit provides drop-in rules, 
 ## ⚡ Quick Start Checklist
 1. **Initialize the Kit**:
    Run `/kit init` inside the REPL to generate project rules and git hooks.
-2. **Launch the Dashboard**:
-   Run `/dashboard` or `ustaad dashboard` to open a stunning real-time desktop interface of your workspace.
-3. **Verify Security**:
+2. **Verify Security**:
    Run `/kit check` or `ustaad kit check` to audit code for leaked secrets or risky configurations.
-4. **Context Persistence**:
+3. **Context Persistence**:
    Add files with `/add` and save your workspace state with `/save` (or reload with `/load`).
 
 ## 📁 Directory Structure

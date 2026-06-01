@@ -114,7 +114,7 @@ def run_security_scan(workspace: str = None, git_staged_only: bool = False) -> D
         except Exception:
             pass
 
-    # 4. Render Rich Dashboard elements if executed interactively
+    # 4. Render Rich terminal elements if executed interactively
     score = max(0, 100 - len([f for f in findings if f["severity"] == "dangerous"]) * 20 - len([f for f in findings if f["severity"] == "normal"]) * 5)
     
     return {

@@ -115,7 +115,7 @@ async def handle_client(websocket):
                         response_payload = {"context": ACTIVE_CONTEXT_FILES}
 
                 elif action == "get_status":
-                    # Dashboard telemetry: system health status
+                    # VSCode telemetry: system health status
                     import socket as _sock
                     ollama_up = False
                     try:
@@ -144,7 +144,7 @@ async def handle_client(websocket):
                     }
 
                 elif action == "get_skills":
-                    # Dashboard telemetry: dynamic skills list
+                    # VSCode telemetry: dynamic skills list
                     plugins_dir = os.path.join(os.getcwd(), ".ustaad", "plugins")
                     skills = []
                     if os.path.isdir(plugins_dir):
@@ -154,7 +154,7 @@ async def handle_client(websocket):
                     response_payload = {"skills": skills, "count": len(skills)}
 
                 elif action == "security_scan":
-                    # Dashboard telemetry: run security audit
+                    # VSCode telemetry: run security audit
                     try:
                         from ustaad.operator.security_scanner import run_security_scan
                         response_payload = run_security_scan(os.getcwd())
