@@ -81,6 +81,27 @@ class PluginSystem:
         module = importlib.util.module_from_spec(spec)
         sys.modules[module_name] = module
         
+        # AST-based Sandboxing: Validate before executing
+        import ast
+        with open(plugin_path, "r", encoding="utf-8") as f:
+            plugin_code = f.read()
+            
+        try:
+            tree = ast.parse(plugin_code)
+            restricted_modules = {'os', 'sys', 'subprocess', 'shutil', 'socket', 'pty'}
+            for node in ast.walk(tree):
+                if isinstance(node, ast.Import):
+                    for alias in node.names:
+                        if alias.name.split('.')[0] in restricted_modules:
+                            raise Exception(f"Restricted module import blocked: {alias.name}")
+                elif isinstance(node, ast.ImportFrom):
+                    if node.module and node.module.split('.')[0] in restricted_modules:
+                        raise Exception(f"Restricted module import blocked: {node.module}")
+        except Exception as e:
+            if module_name in sys.modules:
+                del sys.modules[module_name]
+            raise Exception(f"Sandbox validation failed: {e}")
+            
         try:
             spec.loader.exec_module(module)
         except Exception as e:

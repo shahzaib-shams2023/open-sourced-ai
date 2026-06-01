@@ -16,11 +16,15 @@ class ContextBuilder:
 
     def load_ai_md(self) -> str:
         """Loads AI.md or CLAUDE.md from the root of the project."""
+        from ustaad.core.safety import SafetyScanner
+        scanner = SafetyScanner()
         for filename in ["AI.md", "CLAUDE.md"]:
             path = os.path.join(self.workspace, filename)
             if os.path.exists(path):
                 with open(path, "r", encoding="utf-8") as f:
-                    return f"[PROJECT CONVENTIONS ({filename})]\n" + f.read() + "\n"
+                    content = f.read()
+                    content = scanner.sanitize_prompt(content)
+                    return f"[PROJECT CONVENTIONS ({filename})]\n" + content + "\n"
         return ""
 
     def load_agents_md(self) -> str:
@@ -28,11 +32,15 @@ class ContextBuilder:
         Walks down from the root to the current directory (or just loads from root for now)
         to find AGENTS.md files and cascade their rules.
         """
+        from ustaad.core.safety import SafetyScanner
+        scanner = SafetyScanner()
         agents_content = []
         path = os.path.join(self.workspace, "AGENTS.md")
         if os.path.exists(path):
             with open(path, "r", encoding="utf-8") as f:
-                agents_content.append(f"[AGENT RULES (Root)]\n{f.read()}")
+                content = f.read()
+                content = scanner.sanitize_prompt(content)
+                agents_content.append(f"[AGENT RULES (Root)]\n{content}")
         
         return "\n".join(agents_content) + "\n" if agents_content else ""
 

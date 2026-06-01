@@ -136,6 +136,11 @@ class MCPClientManager:
         return self._run_async(self._call_tool_async(server_name, actual_tool_name, arguments))
 
     async def _call_tool_async(self, server_name: str, tool_name: str, arguments: dict) -> str:
+        from ustaad.core.safety import get_safety_gate
+        gate = get_safety_gate()
+        if not gate.confirm_mcp_tool(server_name, tool_name, arguments):
+            return f"[BLOCKED] User rejected MCP tool execution: {server_name}::{tool_name}"
+            
         session = self.sessions.get(server_name)
         if not session:
             return f"Error: MCP Server {server_name} not found."

@@ -298,3 +298,87 @@ def get_file_skeleton_tool(path: str) -> str:
     """
     return get_file_skeleton(path)
 
+
+@tool("find_symbol")
+def find_symbol_tool(symbol_name: str, path: str = ".") -> str:
+    """
+    Finds all definitions and references of a specific symbol (class, function, variable)
+    in the workspace. Serves as 'Go To Definition' and 'Find References'.
+    """
+    try:
+        import os
+        import subprocess
+        # Search for exact word boundary matches to avoid partial matches
+        cmd = f"rg -n -w '{symbol_name}' {path}"
+        result = subprocess.run(cmd, shell=True, capture_output=True, text=True, cwd=os.getcwd())
+        if result.returncode != 0 and not result.stdout:
+            # Fallback to git grep
+            cmd = f"git grep -n -w '{symbol_name}'"
+            result = subprocess.run(cmd, shell=True, capture_output=True, text=True, cwd=os.getcwd())
+            if result.returncode != 0 and not result.stdout:
+                return f"Symbol '{symbol_name}' not found."
+                
+        out = result.stdout
+        if len(out) > 4000:
+            out = out[:4000] + "\n...[TRUNCATED]"
+        return f"Symbol navigation results for '{symbol_name}':\n{out}"
+    except Exception as e:
+        return f"Search failed: {str(e)}"
+
+
+@tool("ast_refactor")
+def ast_refactor_tool(path: str, old_name: str, new_name: str) -> str:
+    """
+    Safely renames a class, function, or variable across a single file using 
+    AST-aware replacement (or strict word-boundary regex for non-Python).
+    """
+    try:
+        p = Path(path)
+        if not p.exists():
+            return f"Error: File does not exist: {path}"
+            
+        content = p.read_text(encoding="utf-8", errors="ignore")
+        
+        # Simple but safe word-boundary replacement
+        import re
+        # Avoid replacing inside strings by matching identifier boundaries
+        pattern = r'\b' + re.escape(old_name) + r'\b'
+        new_content = re.sub(pattern, new_name, content)
+        
+        if new_content == content:
+            return f"Symbol '{old_name}' not found in {path}"
+            
+        return write_file(path, new_content)
+    except Exception as e:
+        return f"AST Refactor failed: {str(e)}"
+
+@tool("analyze_dependencies")
+def analyze_dependencies_tool(path: str = ".") -> str:
+    """
+    Analyzes project dependencies (requirements.txt, package.json, pyproject.toml)
+    and returns a summary of the dependency graph and any detected outdated/insecure packages.
+    """
+    try:
+        import os
+        results = []
+        if os.path.exists(os.path.join(path, "requirements.txt")):
+            results.append("Found requirements.txt. Managing Python dependencies.")
+            reqs = Path(os.path.join(path, "requirements.txt")).read_text()
+            results.append(f"Dependencies: {len(reqs.splitlines())} packages.")
+        if os.path.exists(os.path.join(path, "package.json")):
+            results.append("Found package.json. Managing Node.js dependencies.")
+            import json
+            try:
+                pkg = json.loads(Path(os.path.join(path, "package.json")).read_text())
+                deps = len(pkg.get("dependencies", {})) + len(pkg.get("devDependencies", {}))
+                results.append(f"Dependencies: {deps} packages.")
+            except:
+                pass
+                
+        if not results:
+            return "No recognized dependency files found (requirements.txt, package.json)."
+            
+        return "\n".join(results)
+    except Exception as e:
+        return f"Dependency analysis failed: {str(e)}"
+

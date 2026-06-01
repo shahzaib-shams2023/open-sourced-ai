@@ -102,6 +102,29 @@ class SafetyGate:
             risk_level=risk,
         )
 
+    def confirm_mcp_tool(self, server_name: str, tool_name: str, arguments: dict) -> bool:
+        """
+        MCP tools run with full system access. We must confirm them or at least
+        check if the repository is trusted.
+        """
+        mode = get_mode()
+        
+        # Fast path if autonomous
+        if mode.autonomous:
+            return True
+            
+        from ustaad.core.trust import TrustModel
+        tm = TrustModel()
+        if tm.is_trusted(os.getcwd()):
+            return True # Trusted repo bypasses MCP prompts
+            
+        desc = f"Server: {server_name}\nTool: {tool_name}\nArgs: {arguments}"
+        return self._prompt_user(
+            action_type="MCP TOOL EXECUTION",
+            description=desc,
+            risk_level="dangerous",
+        )
+
     def _is_critical_file(self, path: str) -> bool:
         critical = [
             ".env", ".gitignore", "Dockerfile", "docker-compose",

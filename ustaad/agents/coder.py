@@ -10,7 +10,8 @@ from ustaad.llm import load_model
 from ustaad.tools.file_tools import (
     read_file_tool, write_file_tool, append_file_tool,
     list_directory_tool, search_files_tool, delete_file_tool,
-    get_file_skeleton_tool
+    get_file_skeleton_tool, find_symbol_tool, ast_refactor_tool,
+    analyze_dependencies_tool
 )
 from ustaad.tools.shell_tools import run_command_tool, ripgrep_search_tool
 from ustaad.tools.patch_tools import patch_file_tool, preview_diff_tool, unified_diff_patch_tool
@@ -50,7 +51,7 @@ coder = Agent(
     tools=[
         read_file_tool, write_file_tool, append_file_tool,
         delete_file_tool, list_directory_tool, search_files_tool,
-        get_file_skeleton_tool,
+        get_file_skeleton_tool, find_symbol_tool, ast_refactor_tool, analyze_dependencies_tool,
         run_command_tool, ripgrep_search_tool, patch_file_tool, preview_diff_tool, unified_diff_patch_tool,
         git_status_tool, run_tests_tool, semantic_search_tool, query_knowledge_graph_tool,
     ],

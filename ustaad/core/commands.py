@@ -589,6 +589,57 @@ def cmd_market(args: List[str], ctx: CommandContext):
     else:
         console.print("[yellow]Usage: /market list | /market install <skill_id>[/yellow]")
 
+def cmd_worktree(args: List[str], ctx: CommandContext):
+    """Manage isolated worktrees and multiple repositories."""
+    from ustaad.core.worktree import WorkspaceManager
+    manager = WorkspaceManager(ctx.workspace)
+    
+    if not args:
+        console.print("[cyan]Active Workspaces:[/cyan]")
+        for w in manager.list_workspaces():
+            console.print(f"  - {w}")
+    elif args[0] == "create" and len(args) > 1:
+        console.print(f"[bold cyan]🌿 Creating worktree for branch {args[1]}[/bold cyan]")
+        console.print(manager.create_worktree(args[1]))
+    elif args[0] == "switch" and len(args) > 1:
+        console.print(manager.switch_workspace(args[1]))
+    else:
+        console.print("[yellow]Usage: /worktree [create <branch> | switch <name>][/yellow]")
+
+def cmd_trust(args: List[str], ctx: CommandContext):
+    """Manage repository trust model."""
+    from ustaad.core.trust import TrustModel
+    tm = TrustModel()
+    
+    if not args:
+        trusted = tm.is_trusted(ctx.workspace)
+        status = "[green]TRUSTED[/green]" if trusted else "[red]UNTRUSTED[/red]"
+        console.print(f"Current workspace is {status}")
+    elif args[0] == "grant":
+        tm.trust_repo(ctx.workspace)
+        console.print(f"[green]✓ Trust granted for {ctx.workspace}[/green]")
+    elif args[0] == "revoke":
+        tm.revoke_trust(ctx.workspace)
+        console.print(f"[yellow]✗ Trust revoked for {ctx.workspace}[/yellow]")
+    else:
+        console.print("[yellow]Usage: /trust [grant | revoke][/yellow]")
+        
+def cmd_dashboard(args: List[str], ctx: CommandContext):
+    """Start the agent telemetry dashboard."""
+    from ustaad.core.dashboard import TelemetryDashboard
+    
+    # Simple singleton to avoid port binding errors in REPL
+    if not hasattr(cmd_dashboard, "server"):
+        cmd_dashboard.server = TelemetryDashboard(port=8080)
+        
+    if args and args[0] == "stop":
+        cmd_dashboard.server.stop()
+        console.print("[yellow]Dashboard stopped.[/yellow]")
+    else:
+        cmd_dashboard.server.start()
+        console.print("[bold green]✓ Dashboard running at http://localhost:8080[/bold green]")
+        console.print("[dim]Use /dashboard stop to terminate.[/dim]")
+
 # ---------------------------------------------------------------------------
 # Register all built-in commands
 # ---------------------------------------------------------------------------
@@ -616,6 +667,9 @@ def register_builtin_commands(registry: CommandRegistry):
     registry.register("/workflow", cmd_workflow, "Run YAML workflow", "Ecosystem", "/workflow [name]")
     registry.register("/ci", cmd_ci, "Check CI/CD status", "Ecosystem", "/ci [status|run]")
     registry.register("/market", cmd_market, "Skill Marketplace", "Ecosystem", "/market [list|install]")
+    registry.register("/worktree", cmd_worktree, "Manage git worktrees", "Advanced", "/worktree [create|switch]")
+    registry.register("/trust", cmd_trust, "Manage repo trust", "Security", "/trust [grant|revoke]")
+    registry.register("/dashboard", cmd_dashboard, "Start telemetry UI", "Ecosystem", "/dashboard")
 
 
 # ---------------------------------------------------------------------------
