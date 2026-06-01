@@ -167,9 +167,12 @@ def cmd_skills():
     table.add_column("Tags", style="magenta")
     
     for skill_id, data in sm.registry.items():
+        is_global = os.path.expanduser("~") in data["dir"] and ".ustaad" in data["dir"]
+        is_builtin = "core_skills" in data["dir"]
+        
         table.add_row(
             data.get("name", skill_id),
-            "Global" if ".ustaad/skills" in data["dir"] and "Administrator" in data["dir"] else ("Built-in" if "core_skills" in data["dir"] else "Local"),
+            "Global" if is_global else ("Built-in" if is_builtin else "Local"),
             ", ".join(data.get("tags", []))
         )
     console.print(table)
