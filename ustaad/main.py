@@ -86,7 +86,12 @@ def run_task(user_prompt: str, workspace: str = None) -> str:
     lints_passed = True
 
     # --- MODE ---
-    mode_label = "AUTONOMOUS" if mode.autonomous else ("SAFE" if mode.safe else "SEMI-AUTO")
+    if mode.agentic:
+        mode_label = "AGENTIC LOOP"
+    elif mode.autonomous:
+        mode_label = "AUTONOMOUS"
+    else:
+        mode_label = "SAFE" if mode.safe else "SEMI-AUTO"
 
     # --- SCAN ---
     send_progress_update("SCAN", "Scanning workspace structure...")
@@ -213,6 +218,20 @@ def run_task(user_prompt: str, workspace: str = None) -> str:
     except Exception as e:
         console.print(f"[yellow]   ⚠ Failed to load dynamic plugins: {e}[/yellow]")
 
+    # Load MCP Servers
+    try:
+        from ustaad.mcp.client import MCPClientManager
+        mcp_manager = MCPClientManager(workspace)
+        mcp_manager.connect_all()
+        if mcp_manager.tools:
+            for tool in mcp_manager.tools:
+                if tool not in coder.tools:
+                    coder.tools.append(tool)
+    except ImportError:
+        pass # MCP SDK not installed
+    except Exception as e:
+        console.print(f"[yellow]   ⚠ Failed to connect to MCP Servers: {e}[/yellow]")
+
     # --- BUILD PIPELINE based on routing decision ---
     agents = []
     tasks = []
@@ -251,6 +270,20 @@ def run_task(user_prompt: str, workspace: str = None) -> str:
         elif role_name == "coder":
             context_tasks = [t for t in tasks]  # all prior tasks as context
             optimized_rules = optimizer.compile_instructions("CODE")
+            
+            agentic_instructions = ""
+            if mode.agentic:
+                agentic_instructions = """
+                [AGENTIC MODE ENABLED]
+                You are the sole Lead Agent operating in a continuous ReAct loop.
+                You must:
+                1. Explore the codebase using `ripgrep_search` and `run_command` (e.g., ls, cat, etc).
+                2. Plan your approach internally.
+                3. Write or patch files.
+                4. RUN TESTS using `run_command` to verify your code. Do NOT complete the task until tests pass.
+                5. If tests fail, diagnose and fix them iteratively.
+                """
+
             task = Task(
                 description=f"""
                 USTAAD Execution Phase. Implement the plan.
@@ -259,6 +292,7 @@ def run_task(user_prompt: str, workspace: str = None) -> str:
                 Platform: {platform.system()}
                 
                 {optimized_rules}
+                {agentic_instructions}
                 
                 RULES:
                 - Read existing files before modifying them.

@@ -33,7 +33,8 @@ from rich.markdown import Markdown
 from rich.panel import Panel
 from rich.text import Text
 from rich.rule import Rule
-from rich.table import Table\nfrom ustaad.repl_ui import print_welcome_commands, print_mode, UstaadCompleter, get_statusbar_text
+from rich.table import Table
+from ustaad.repl_ui import print_welcome_commands, print_mode, UstaadCompleter, get_statusbar_text
 
 from ustaad.main import run_task
 from ustaad.core.execution_mode import get_mode, set_mode
@@ -122,7 +123,8 @@ def is_ollama_running() -> bool:
 def cmd_plugins():
     """List all dynamically loaded plugins and their tools."""
     from ustaad.core.plugin_system import PluginSystem
-    from rich.table import Table\nfrom ustaad.repl_ui import print_welcome_commands, print_mode, UstaadCompleter, get_statusbar_text
+    from rich.table import Table
+    from ustaad.repl_ui import print_welcome_commands, print_mode, UstaadCompleter, get_statusbar_text
     from rich.panel import Panel
     
     ps = PluginSystem(os.getcwd())
@@ -740,12 +742,26 @@ def run_interactive():
             elif cmd == "/mode":
                 from ustaad.core.execution_mode import get_mode, set_mode
                 m = get_mode()
-                if m.autonomous:
-                    set_mode(safe=True, autonomous=False, confirm_destructive=True)
-                    console.print("[bold green]🛡️ Execution mode switched to SAFE mode[/bold green]")
+                if not args:
+                    if m.autonomous:
+                        set_mode(safe=True, autonomous=False, confirm_destructive=True, agentic=False)
+                        console.print("[bold green]🛡️ Execution mode switched to SAFE mode[/bold green]")
+                    else:
+                        set_mode(safe=False, autonomous=True, confirm_destructive=False, agentic=False)
+                        console.print("[bold red]⚠ Execution mode switched to AUTONOMOUS mode[/bold red]")
                 else:
-                    set_mode(safe=False, autonomous=True, confirm_destructive=False)
-                    console.print("[bold red]⚠ Execution mode switched to AUTONOMOUS mode[/bold red]")
+                    mode_arg = args[0].lower()
+                    if mode_arg == "agentic":
+                        set_mode(safe=False, autonomous=False, confirm_destructive=False, agentic=True)
+                        console.print("[bold magenta]🚀 Execution mode switched to AGENTIC LOOP mode (Claude Code style)[/bold magenta]")
+                    elif mode_arg == "safe":
+                        set_mode(safe=True, autonomous=False, confirm_destructive=True, agentic=False)
+                        console.print("[bold green]🛡️ Execution mode switched to SAFE mode[/bold green]")
+                    elif mode_arg in ("autonomous", "auto"):
+                        set_mode(safe=False, autonomous=True, confirm_destructive=False, agentic=False)
+                        console.print("[bold red]⚠ Execution mode switched to AUTONOMOUS mode[/bold red]")
+                    else:
+                        console.print(f"[yellow]Unknown mode: {mode_arg}. Use: safe, autonomous, agentic[/yellow]")
                 continue
             elif cmd == "/model":
                 if not args:

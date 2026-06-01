@@ -12,7 +12,7 @@ from ustaad.tools.file_tools import (
     list_directory_tool, search_files_tool, delete_file_tool,
     get_file_skeleton_tool
 )
-from ustaad.tools.shell_tools import run_command_tool
+from ustaad.tools.shell_tools import run_command_tool, ripgrep_search_tool
 from ustaad.tools.patch_tools import patch_file_tool, preview_diff_tool, unified_diff_patch_tool
 from ustaad.tools.git_tools import git_status_tool
 from ustaad.tools.test_tools import run_tests_tool
@@ -51,7 +51,7 @@ coder = Agent(
         read_file_tool, write_file_tool, append_file_tool,
         delete_file_tool, list_directory_tool, search_files_tool,
         get_file_skeleton_tool,
-        run_command_tool, patch_file_tool, preview_diff_tool, unified_diff_patch_tool,
+        run_command_tool, ripgrep_search_tool, patch_file_tool, preview_diff_tool, unified_diff_patch_tool,
         git_status_tool, run_tests_tool, semantic_search_tool, query_knowledge_graph_tool,
     ],
     llm=load_model("gemma3:12b"),

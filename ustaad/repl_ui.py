@@ -29,7 +29,7 @@ def get_statusbar_text():
     from ustaad.core.execution_mode import get_mode
     from ustaad.llm import _load_config
     mode = get_mode()
-    mode_str = "AUTONOMOUS" if mode.autonomous else ("SAFE" if mode.safe else "SEMI-AUTO")
+    mode_str = "AGENTIC" if mode.agentic else ("AUTONOMOUS" if mode.autonomous else ("SAFE" if mode.safe else "SEMI-AUTO"))
     git_branch = get_git_branch()
     ws_name = os.path.basename(os.getcwd())
     
@@ -112,7 +112,9 @@ class UstaadCompleter(Completer):
 
 def print_mode():
     mode = get_mode()
-    if mode.autonomous:
+    if mode.agentic:
+        label = "[bold magenta]🚀 AGENTIC[/bold magenta] — single agent ReAct fluid loop"
+    elif mode.autonomous:
         label = "[bold red]⚠ AUTONOMOUS[/bold red] — all ops auto-execute"
     elif mode.safe:
         label = "[bold green]🔒 SAFE[/bold green] — reads auto, writes confirm"

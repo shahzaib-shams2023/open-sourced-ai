@@ -54,9 +54,26 @@ def run_command_safe(command: str) -> dict:
             "blocked": True,
         }
 
-    from ustaad.docker.docker_runner import DockerSandbox
-    sandbox = DockerSandbox()
-    return sandbox.run(command)
+    try:
+        import os
+        import subprocess
+        result = subprocess.run(
+            command,
+            shell=True,
+            text=True,
+            capture_output=True,
+            timeout=120,
+            cwd=os.getcwd()
+        )
+        return {
+            "stdout": result.stdout,
+            "stderr": result.stderr,
+            "returncode": result.returncode,
+        }
+    except subprocess.TimeoutExpired:
+        return {"error": f"Command timed out after 120s: {command}"}
+    except Exception as e:
+        return {"error": str(e)}
 
 
 @tool("run_command")
@@ -93,3 +110,28 @@ def run_command_tool(command: str) -> str:
     }.get(classification, "[OK]")
 
     return f"{prefix} {output}"
+
+@tool("ripgrep_search")
+def ripgrep_search_tool(pattern: str, directory: str = ".") -> str:
+    """
+    Searches for a regex pattern across the codebase using ripgrep (rg) or git grep.
+    Returns matched files and lines. Fast and language-agnostic.
+    """
+    try:
+        import os
+        import subprocess
+        cmd = f"rg -n '{pattern}' {directory}"
+        result = subprocess.run(cmd, shell=True, capture_output=True, text=True, cwd=os.getcwd())
+        if result.returncode != 0 and not result.stdout:
+            # Fallback to git grep
+            cmd = f"git grep -n '{pattern}'"
+            result = subprocess.run(cmd, shell=True, capture_output=True, text=True, cwd=os.getcwd())
+            if result.returncode != 0 and not result.stdout:
+                 return "No matches found."
+        
+        out = result.stdout
+        if len(out) > 4000:
+            out = out[:4000] + "\n...[TRUNCATED]"
+        return out
+    except Exception as e:
+        return f"Search failed: {str(e)}"

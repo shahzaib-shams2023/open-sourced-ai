@@ -114,7 +114,7 @@ class PatchEngine:
 
         # Safety gate for critical files
         gate = get_safety_gate()
-        if not gate.confirm_file_write(abs_path, is_overwrite=True):
+        if not gate.confirm_file_write(abs_path, is_overwrite=True, diff=result.diff):
             result.success = False
             result.error = "[BLOCKED] User rejected patch"
             return result

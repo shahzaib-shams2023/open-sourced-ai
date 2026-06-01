@@ -179,6 +179,22 @@ def route_task(prompt: str, file_count: int = 0, is_empty_workspace: bool = Fals
     task_type = classify_type(prompt)
     complexity = classify_complexity(prompt, file_count)
 
+    from ustaad.core.execution_mode import get_mode
+    mode = get_mode()
+
+    # --- FLUID LOOP (Claude Code style) ---
+    if mode.agentic:
+        return TaskRoute(
+            task_type=task_type,
+            complexity=complexity,
+            agents_needed=["coder"],
+            skip_indexing=True,
+            skip_search=True,
+            skip_tests=True,
+            context_budget=100_000,
+            reason="Fluid agentic loop — Lead agent handles all phases autonomously via tools"
+        )
+
     # Empty workspace overrides: always use planner + coder for greenfield
     if is_empty_workspace:
         return TaskRoute(

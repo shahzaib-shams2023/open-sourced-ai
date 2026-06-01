@@ -11,6 +11,7 @@ from typing import Optional
 from rich.console import Console
 from rich.panel import Panel
 from rich.text import Text
+from rich.syntax import Syntax
 
 from ustaad.core.execution_mode import get_mode
 
@@ -52,7 +53,7 @@ class SafetyGate:
             risk_level=classification,
         )
 
-    def confirm_file_write(self, path: str, is_overwrite: bool = False) -> bool:
+    def confirm_file_write(self, path: str, is_overwrite: bool = False, diff: str = "") -> bool:
         """
         Check whether writing to a file should proceed.
         """
@@ -68,6 +69,7 @@ class SafetyGate:
             action_type="FILE OVERWRITE",
             description=f"Overwrite: {path}",
             risk_level="dangerous" if self._is_critical_file(path) else "normal",
+            diff=diff
         )
 
     def confirm_file_delete(self, path: str) -> bool:
@@ -114,6 +116,7 @@ class SafetyGate:
         action_type: str,
         description: str,
         risk_level: str = "normal",
+        diff: str = ""
     ) -> bool:
         """
         Display a rich confirmation prompt and wait for user input.
@@ -143,6 +146,10 @@ class SafetyGate:
             border_style="cyan",
             padding=(1, 2),
         ))
+        
+        if diff:
+            syntax = Syntax(diff, "diff", theme="monokai", line_numbers=True)
+            console.print(Panel(syntax, title="[bold blue]Proposed Changes[/bold blue]", border_style="blue"))
 
         try:
             response = input("  Proceed? [y/N/always] ").strip().lower()

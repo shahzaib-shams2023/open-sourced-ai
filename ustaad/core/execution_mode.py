@@ -86,6 +86,7 @@ class ExecutionMode:
     safe: bool = True
     autonomous: bool = False
     confirm_destructive: bool = True
+    agentic: bool = False
 
     def classify_command(self, command: str) -> str:
         """
@@ -161,6 +162,7 @@ def set_mode(
     safe: Optional[bool] = None,
     autonomous: Optional[bool] = None,
     confirm_destructive: Optional[bool] = None,
+    agentic: Optional[bool] = None,
 ) -> ExecutionMode:
     global _current_mode
     mode = get_mode()
@@ -170,5 +172,7 @@ def set_mode(
         mode.autonomous = autonomous
     if confirm_destructive is not None:
         mode.confirm_destructive = confirm_destructive
+    if agentic is not None:
+        mode.agentic = agentic
     _current_mode = mode
     return mode
